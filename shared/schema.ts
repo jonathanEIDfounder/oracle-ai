@@ -63,12 +63,35 @@ export const accessKeys = pgTable("access_keys", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+export const sovereignDevices = pgTable("sovereign_devices", {
+  id: serial("id").primaryKey(),
+  fingerprint: text("fingerprint").notNull().unique(),
+  deviceModel: text("device_model").notNull(),
+  platform: text("platform").notNull(),
+  ownerEmail: text("owner_email").notNull(),
+  isAuthorized: boolean("is_authorized").notNull().default(true),
+  lastAccess: timestamp("last_access").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const owpViolations = pgTable("owp_violations", {
+  id: serial("id").primaryKey(),
+  deviceFingerprint: text("device_fingerprint"),
+  ipAddress: text("ip_address"),
+  violationType: text("violation_type").notNull(),
+  details: jsonb("details").default({}),
+  isLocked: boolean("is_locked").notNull().default(true),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertSecurityLogSchema = createInsertSchema(securityLogs).omit({ id: true, createdAt: true });
 export const insertAiConfigSchema = createInsertSchema(aiConfigs).omit({ id: true, createdAt: true });
 export const insertAccessKeySchema = createInsertSchema(accessKeys).omit({ id: true, createdAt: true });
+export const insertSovereignDeviceSchema = createInsertSchema(sovereignDevices).omit({ id: true, createdAt: true });
+export const insertOwpViolationSchema = createInsertSchema(owpViolations).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -82,3 +105,7 @@ export type AiConfig = typeof aiConfigs.$inferSelect;
 export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
 export type AccessKey = typeof accessKeys.$inferSelect;
 export type InsertAccessKey = z.infer<typeof insertAccessKeySchema>;
+export type SovereignDevice = typeof sovereignDevices.$inferSelect;
+export type InsertSovereignDevice = z.infer<typeof insertSovereignDeviceSchema>;
+export type OwpViolation = typeof owpViolations.$inferSelect;
+export type InsertOwpViolation = z.infer<typeof insertOwpViolationSchema>;
