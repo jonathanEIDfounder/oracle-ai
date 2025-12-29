@@ -17,7 +17,7 @@ platform :ios do
     )
 
     build_app(
-      workspace: "App/App.xcworkspace",
+      project: "App/App.xcodeproj",
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
@@ -40,7 +40,7 @@ platform :ios do
     )
 
     build_app(
-      workspace: "App/App.xcworkspace",
+      project: "App/App.xcodeproj",
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
