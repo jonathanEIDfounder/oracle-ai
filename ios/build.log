@@ -1,0 +1,45 @@
+[2025-12-29 04:19:47] [INFO] ============================================================
+[2025-12-29 04:19:47] [INFO] Q++RS Code Studio - Build Preparation
+[2025-12-29 04:19:47] [INFO] ============================================================
+[2025-12-29 04:19:47] [INFO] 
+--- Validate Project ---
+[2025-12-29 04:19:47] [INFO] Validating project structure...
+[2025-12-29 04:19:47] [SUCCESS] Found: capacitor.config.ts
+[2025-12-29 04:19:47] [SUCCESS] Found: public/index.html
+[2025-12-29 04:19:47] [SUCCESS] Found: ios/App/App.xcodeproj/project.pbxproj
+[2025-12-29 04:19:47] [INFO] 
+--- Sync Capacitor ---
+[2025-12-29 04:19:47] [INFO] Executing: Syncing web assets to iOS project
+[2025-12-29 04:19:49] [SUCCESS] Success: Syncing web assets to iOS project
+[2025-12-29 04:19:49] [INFO]   [warn] Unable to find "xcodebuild". Skipping xcodebuild clean step...
+[2025-12-29 04:19:49] [INFO]   ✔ Updating iOS native dependencies with pod install in 32.08ms
+[2025-12-29 04:19:49] [INFO]   ✔ update ios in 235.60ms
+[2025-12-29 04:19:49] [INFO]   [info] Sync finished in 0.476s
+[2025-12-29 04:19:49] [INFO] 
+--- Prepare Build Config ---
+[2025-12-29 04:19:49] [INFO] Preparing build configuration...
+[2025-12-29 04:19:49] [SUCCESS] Build config written to: /home/runner/workspace/ios/build-config.json
+[2025-12-29 04:19:49] [INFO] 
+--- Create Export Options ---
+[2025-12-29 04:19:49] [INFO] Creating export options plist...
+[2025-12-29 04:19:49] [SUCCESS] Export options: /home/runner/workspace/ios/App/ExportOptions.plist
+[2025-12-29 04:19:49] [INFO] 
+--- Generate Master Script ---
+[2025-12-29 04:19:49] [INFO] Generating master build script...
+[2025-12-29 04:19:49] [SUCCESS] Master build script: /home/runner/workspace/ios/master-build.sh
+[2025-12-29 04:19:49] [INFO] 
+--- Create Codemagic Config ---
+[2025-12-29 04:19:49] [INFO] Creating Codemagic CI/CD configuration...
+[2025-12-29 04:19:49] [SUCCESS] Codemagic config: /home/runner/workspace/codemagic.yaml
+[2025-12-29 04:19:49] [INFO] 
+============================================================
+[2025-12-29 04:19:49] [SUCCESS] PREPARATION COMPLETE - READY FOR macOS BUILD
+[2025-12-29 04:19:49] [INFO] ============================================================
+[2025-12-29 04:19:49] [INFO] 
+To complete the build on macOS:
+[2025-12-29 04:19:49] [INFO]   ./ios/master-build.sh
+[2025-12-29 04:19:49] [INFO] 
+Or use Codemagic cloud build:
+[2025-12-29 04:19:49] [INFO]   1. Push to GitHub/GitLab
+[2025-12-29 04:19:49] [INFO]   2. Connect at codemagic.io
+[2025-12-29 04:19:49] [INFO]   3. Build automatically starts

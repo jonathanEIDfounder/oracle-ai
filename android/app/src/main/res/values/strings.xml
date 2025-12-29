@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Oracle AI</string>
+    <string name="title_activity_main">Oracle AI</string>
+    <string name="package_name">com.oracleai.app</string>
+    <string name="custom_url_scheme">com.oracleai.app</string>
+</resources>

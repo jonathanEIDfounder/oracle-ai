@@ -1,0 +1,6 @@
+app_identifier("com.oracleai.app")
+username(ENV["APPLE_ID"])
+team_id(ENV["APPLE_TEAM_ID"])
+
+storage_mode("git")
+git_url(ENV["MATCH_GIT_URL"])

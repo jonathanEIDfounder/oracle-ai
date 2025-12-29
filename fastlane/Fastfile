@@ -1,0 +1,40 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Sync certificates and profiles"
+  lane :sync_certs do
+    match(
+      type: "development",
+      app_identifier: "com.oracleai.app",
+      readonly: true
+    )
+  end
+
+  desc "Build iOS app"
+  lane :build do
+    sync_certs
+    build_ios_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      export_method: "development",
+      output_directory: "ios/build",
+      output_name: "OracleAI.ipa"
+    )
+  end
+
+  desc "Build for App Store"
+  lane :release do
+    match(
+      type: "appstore",
+      app_identifier: "com.oracleai.app",
+      readonly: true
+    )
+    build_ios_app(
+      workspace: "ios/App/App.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: "ios/build",
+      output_name: "OracleAI-AppStore.ipa"
+    )
+  end
+end

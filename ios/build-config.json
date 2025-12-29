@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "timestamp": "2025-12-29T04:19:49.930730",
+  "app": {
+    "appId": "com.oracleai.app",
+    "appName": "Oracle AI",
+    "platform": "ios",
+    "webDir": "public"
+  },
+  "build": {
+    "type": "release",
+    "platform": "ios-arm64",
+    "signing": "required",
+    "minIOS": "14.0"
+  },
+  "qpprs": {
+    "compiler": "Q++RS Ultimate 5.0",
+    "optimization": "quantum-enhanced",
+    "target": "universal"
+  },
+  "environment": {
+    "os": "Linux",
+    "macos": false,
+    "python": "3.11.13"
+  }
+}
