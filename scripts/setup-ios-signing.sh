@@ -12,10 +12,23 @@ if [[ "$(uname)" != "Darwin" ]]; then
     exit 1
 fi
 
-read -p "Enter your GitHub Personal Access Token: " GITHUB_TOKEN
-if [[ -z "$GITHUB_TOKEN" ]]; then
-    echo "Error: GitHub token is required"
-    exit 1
+if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+    echo "Using GitHub CLI for authentication..."
+    USE_GH_CLI=true
+else
+    USE_GH_CLI=false
+    if [[ -z "$GITHUB_TOKEN" ]]; then
+        echo "Enter your GitHub Personal Access Token"
+        echo "(Token is read securely and not displayed)"
+        read -s -p "Token: " GITHUB_TOKEN
+        echo ""
+    fi
+    
+    if [[ -z "$GITHUB_TOKEN" ]]; then
+        echo "Error: GitHub token is required"
+        echo "Set GITHUB_TOKEN environment variable or install gh CLI"
+        exit 1
+    fi
 fi
 
 echo ""
@@ -35,103 +48,91 @@ CERT_HASH=$(echo "$IDENTITIES" | head -1 | awk '{print $2}')
 CERT_NAME=$(echo "$IDENTITIES" | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
 echo "Using certificate: $CERT_NAME"
-echo "Hash: $CERT_HASH"
 echo ""
 
 TEMP_DIR=$(mktemp -d)
 P12_PATH="$TEMP_DIR/certificate.p12"
+trap "rm -rf $TEMP_DIR" EXIT
 
-echo "Exporting certificate..."
-security export -k ~/Library/Keychains/login.keychain-db -t identities -f pkcs12 -o "$P12_PATH" -P "$CERT_PASSWORD" -T "" 2>/dev/null || \
-security find-certificate -a -c "Apple Distribution" -p | openssl pkcs12 -export -out "$P12_PATH" -passout "pass:$CERT_PASSWORD" -nokeys 2>/dev/null || \
-(echo "Trying alternative export method..." && \
- security export -k login.keychain -t identities -f pkcs12 -o "$P12_PATH" -P "$CERT_PASSWORD" 2>/dev/null)
+echo "Exporting certificate (you may be prompted for Keychain password)..."
+security export -k ~/Library/Keychains/login.keychain-db -t identities -f pkcs12 -o "$P12_PATH" -P "$CERT_PASSWORD" 2>/dev/null || \
+security export -k login.keychain -t identities -f pkcs12 -o "$P12_PATH" -P "$CERT_PASSWORD" 2>/dev/null || true
 
 if [[ ! -f "$P12_PATH" ]] || [[ ! -s "$P12_PATH" ]]; then
     echo ""
-    echo "Automated export failed. Please export manually:"
+    echo "Automated export requires manual approval. Please:"
     echo "1. Open Keychain Access"
-    echo "2. Find certificate: $CERT_NAME"
-    echo "3. Right-click → Export"
-    echo "4. Save as: $P12_PATH"
-    echo "5. Use password: $CERT_PASSWORD"
+    echo "2. Find: $CERT_NAME"
+    echo "3. Right-click → Export → Save to: $P12_PATH"
+    echo "4. Use password: $CERT_PASSWORD"
     echo ""
-    read -p "Press Enter after manual export, or Ctrl+C to cancel..."
+    read -p "Press Enter after export..."
 fi
 
 if [[ ! -f "$P12_PATH" ]] || [[ ! -s "$P12_PATH" ]]; then
-    echo "Error: Certificate file not found or empty"
-    rm -rf "$TEMP_DIR"
+    echo "Error: Certificate file not found"
     exit 1
 fi
 
 echo "Encoding certificate..."
 CERT_BASE64=$(base64 -i "$P12_PATH")
 
-echo "Getting GitHub repository public key..."
-KEY_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/$REPO/actions/secrets/public-key")
-
-PUBLIC_KEY=$(echo "$KEY_RESPONSE" | grep -o '"key":"[^"]*' | cut -d'"' -f4)
-KEY_ID=$(echo "$KEY_RESPONSE" | grep -o '"key_id":"[^"]*' | cut -d'"' -f4)
-
-if [[ -z "$PUBLIC_KEY" ]] || [[ -z "$KEY_ID" ]]; then
-    echo "Error: Could not get repository public key"
-    echo "Response: $KEY_RESPONSE"
-    rm -rf "$TEMP_DIR"
-    exit 1
-fi
-
-echo "Encrypting and uploading secrets..."
-
-encrypt_secret() {
-    local value="$1"
-    python3 -c "
+upload_secret() {
+    local name="$1"
+    local value="$2"
+    
+    if [[ "$USE_GH_CLI" == "true" ]]; then
+        echo "$value" | gh secret set "$name" -R "$REPO"
+    else
+        KEY_RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/actions/secrets/public-key")
+        
+        PUBLIC_KEY=$(echo "$KEY_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('key',''))" 2>/dev/null)
+        KEY_ID=$(echo "$KEY_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('key_id',''))" 2>/dev/null)
+        
+        if [[ -z "$PUBLIC_KEY" ]]; then
+            echo "Error: Could not get repository public key"
+            exit 1
+        fi
+        
+        pip3 install pynacl -q 2>/dev/null || true
+        
+        ENCRYPTED=$(python3 -c "
 import base64
 from nacl import encoding, public
-
-public_key = '$PUBLIC_KEY'
-secret_value = '''$value'''
-
-public_key_bytes = base64.b64decode(public_key)
-sealed_box = public.SealedBox(public.PublicKey(public_key_bytes))
-encrypted = sealed_box.encrypt(secret_value.encode('utf-8'))
-print(base64.b64encode(encrypted).decode('utf-8'))
-"
+pk = base64.b64decode('$PUBLIC_KEY')
+box = public.SealedBox(public.PublicKey(pk))
+enc = box.encrypt('''$value'''.encode())
+print(base64.b64encode(enc).decode())
+")
+        
+        curl -s -X PUT \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/actions/secrets/$name" \
+            -d "{\"encrypted_value\":\"$ENCRYPTED\",\"key_id\":\"$KEY_ID\"}" > /dev/null
+    fi
 }
 
-pip3 install pynacl -q 2>/dev/null || pip install pynacl -q 2>/dev/null
+echo "Uploading APPLE_CERTIFICATE_BASE64..."
+upload_secret "APPLE_CERTIFICATE_BASE64" "$CERT_BASE64"
 
-ENCRYPTED_CERT=$(encrypt_secret "$CERT_BASE64")
-ENCRYPTED_PASSWORD=$(encrypt_secret "$CERT_PASSWORD")
-
-curl -s -X PUT \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/$REPO/actions/secrets/APPLE_CERTIFICATE_BASE64" \
-    -d "{\"encrypted_value\":\"$ENCRYPTED_CERT\",\"key_id\":\"$KEY_ID\"}" > /dev/null
-
-curl -s -X PUT \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/$REPO/actions/secrets/APPLE_CERTIFICATE_PASSWORD" \
-    -d "{\"encrypted_value\":\"$ENCRYPTED_PASSWORD\",\"key_id\":\"$KEY_ID\"}" > /dev/null
-
-rm -rf "$TEMP_DIR"
+echo "Uploading APPLE_CERTIFICATE_PASSWORD..."
+upload_secret "APPLE_CERTIFICATE_PASSWORD" "$CERT_PASSWORD"
 
 echo ""
 echo "=== Setup Complete ==="
-echo "Secrets uploaded to GitHub:"
-echo "  - APPLE_CERTIFICATE_BASE64"
-echo "  - APPLE_CERTIFICATE_PASSWORD"
-echo ""
-echo "Triggering new build..."
+echo "Triggering iOS build..."
 
-curl -s -X POST \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/$REPO/actions/workflows/ios-build.yml/dispatches" \
-    -d '{"ref":"main"}' > /dev/null
+if [[ "$USE_GH_CLI" == "true" ]]; then
+    gh workflow run ios-build.yml -R "$REPO"
+else
+    curl -s -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Accept: application/vnd.github+json" \
+        "https://api.github.com/repos/$REPO/actions/workflows/ios-build.yml/dispatches" \
+        -d '{"ref":"main"}' > /dev/null
+fi
 
-echo "Build triggered! Monitor at: https://github.com/$REPO/actions"
+echo "Done! Monitor build: https://github.com/$REPO/actions"
