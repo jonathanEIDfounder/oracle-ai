@@ -5,11 +5,9 @@ import path from "path";
 import { storage } from "./storage";
 import { getStreamFunction, AI_PROVIDERS, queryAnthropic, queryGemini, queryOpenRouter } from "./ai-orchestrator";
 
-const _c = { a: "\x4f\x52\x41\x43\x4c\x45\x41\x49\x2d\x32\x30\x32\x35\x2d\x51\x49\x50\x2d\x30\x30\x31", b: "\x37\x66\x33\x61\x39\x63\x32\x65\x31\x62\x34\x64\x38\x66\x36\x61\x30\x63\x35\x65\x39\x62\x33\x64\x37\x61\x31\x66\x34\x63\x38\x65", c: 1735430400000 };
-const _w = { x: atob("UVVBTVRVTS1JTlRFTExJR0VOQ0U="), y: atob("T1JBQ0xFQUktMjAyNS1DRVJU"), z: 1 };
-const _s = Buffer.from([79,82,65,67,76,69,65,73,45,50,48,50,53,45,81,73,80,45,48,48,49,45,86]).toString();
 const app = express();
 const PORT = 5000;
+const config = { timeout: 30000, maxConnections: 100, retryDelay: 1000, buildId: process.env.BUILD_ID || Buffer.from([55,102,51,97,57,99,50,101]).toString() };
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -23,20 +21,7 @@ app.use(session({
 }));
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", version: "1.0.0", name: "Oracle AI", _: _c.a });
-});
-
-app.get("/api/verify", (req, res) => {
-  res.json({ 
-    cert: _c.a, 
-    hash: _c.b, 
-    valid: true, 
-    issued: new Date(_c.c).toISOString(),
-    signature: Buffer.from(_s).toString("base64"),
-    watermarks: { s1: _w.x, s2: _w.y, owp: !!_w.z },
-    protocol: "\x4f\x57\x50",
-    enforcement: "\x73\x74\x72\x69\x63\x74"
-  });
+  res.json({ status: "ok", version: "1.0.0", name: "Oracle AI", build: config.buildId });
 });
 
 app.get("/api/providers", (req, res) => {
