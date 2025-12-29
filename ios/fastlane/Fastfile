@@ -10,37 +10,30 @@ platform :ios do
       is_key_content_base64: true
     )
 
-    build_app(
-      project: "App/App.xcodeproj",
+    # Get provisioning profile
+    sigh(
+      api_key: api_key,
+      app_identifier: "com.oracleai.app",
+      readonly: false,
+      force: true
+    )
+
+    # Build the app
+    gym(
+      workspace: "App/App.xcworkspace",
       scheme: "App",
       configuration: "Release",
       export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-          "com.oracleai.app" => "match AppStore com.oracleai.app"
-        }
-      },
       output_directory: "build",
       output_name: "OracleAI.ipa",
-      xcargs: "-allowProvisioningUpdates"
+      clean: true,
+      xcargs: "DEVELOPMENT_TEAM=#{ENV['APPLE_TEAM_ID']} CODE_SIGN_STYLE=Automatic"
     )
 
-    upload_to_testflight(
+    # Upload to TestFlight
+    pilot(
       api_key: api_key,
       skip_waiting_for_build_processing: true
-    )
-  end
-
-  desc "Build only for development"
-  lane :build do
-    build_app(
-      project: "App/App.xcodeproj",
-      scheme: "App",
-      configuration: "Debug",
-      export_method: "development",
-      output_directory: "build",
-      output_name: "OracleAI-dev.ipa",
-      skip_codesigning: true
     )
   end
 end
