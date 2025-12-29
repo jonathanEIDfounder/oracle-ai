@@ -62,23 +62,18 @@ const isLocalhost = (req: express.Request): boolean => {
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost');
 };
 
-const PUBLIC_PATHS = ["/api/sovereign/verify"];
+const PUBLIC_PATHS = ["/api/sovereign/verify", "/api/health"];
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/")) {
-    if (!isLocalhost(req)) {
-      return res.status(403).json({ 
-        blocked: true, 
-        message: "ACCESS DENIED - Localhost Only",
-        owner: SOVEREIGN_NAME
-      });
-    }
     if (PUBLIC_PATHS.some(p => req.path.startsWith(p))) return next();
     if (!isOwner(req)) {
       return res.status(403).json({ 
         blocked: true, 
-        message: "ACCESS DENIED - Sovereign ID: 1 Required",
-        owner: SOVEREIGN_NAME
+        message: "ACCESS DENIED - Sovereign Owner Only",
+        owner: SOVEREIGN_NAME,
+        requiresVerification: true,
+        verifyEndpoint: "/api/sovereign/verify"
       });
     }
   }
