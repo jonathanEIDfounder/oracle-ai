@@ -23,9 +23,6 @@ workflows:
       node: 20
       vars:
         BUNDLE_ID: com.oracleai.app
-        APP_STORE_CONNECT_PRIVATE_KEY: $ASC_KEY_CONTENT
-        APP_STORE_CONNECT_KEY_IDENTIFIER: $ASC_KEY_ID
-        APP_STORE_CONNECT_ISSUER_ID: $ASC_ISSUER_ID
     
     scripts:
       - name: Install Node dependencies
@@ -70,6 +67,8 @@ workflows:
       
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $ASC_KEY_CONTENT
+        key_id: $ASC_KEY_ID
+        issuer_id: $ASC_ISSUER_ID
         submit_to_testflight: true
         expire_build_submitted_for_review: true
