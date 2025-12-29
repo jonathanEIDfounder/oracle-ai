@@ -6,7 +6,7 @@ function v() {
   const p1 = String.fromCharCode((a.c >> 24) & 0xFF, (a.c >> 16) & 0xFF, (a.c >> 8) & 0xFF, a.c & 0xFF);
   const p2 = String.fromCharCode((a.b >> 24) & 0xFF, (a.b >> 16) & 0xFF, (a.b >> 8) & 0xFF, a.b & 0xFF);
   const p3 = String.fromCharCode((a.f >> 24) & 0xFF, (a.f >> 16) & 0xFF, (a.f >> 8) & 0xFF, a.f & 0xFF);
-  const p4 = String.fromCharCode((a.r >> 24) & 0xFF, (a.r >> 16) & 0xFF, (a.r >> 8) & 0xFF, a.r & 0xFF);
+  const p4 = String.fromCharCode((a.r >> 16) & 0xFF, (a.r >> 8) & 0xFF, a.r & 0xFF);
   const h = s.map(x => String.fromCharCode(x)).join('');
   return { id: `${p1}${p2}-${p3}-${p4}-${k}`, hash: h, valid: true, issued: new Date(1735430400000).toISOString() };
 }
