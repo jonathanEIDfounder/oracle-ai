@@ -31,14 +31,12 @@ jobs:
       - name: Install CocoaPods
         run: gem install cocoapods --no-document
       
-      - name: Copy web assets to iOS
-        run: |
-          mkdir -p ios/App/App/public
-          cp -r public/* ios/App/App/public/
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios --inline
       
       - name: Install Pods
         working-directory: ios/App
-        run: pod install --repo-update
+        run: pod install --repo-update || pod install
       
       - name: Install fastlane
         run: gem install fastlane --no-document
