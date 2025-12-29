@@ -31,8 +31,10 @@ jobs:
       - name: Install CocoaPods
         run: gem install cocoapods --no-document
       
-      - name: Sync Capacitor
-        run: npx cap sync ios
+      - name: Copy web assets to iOS
+        run: |
+          mkdir -p ios/App/App/public
+          cp -r public/* ios/App/App/public/
       
       - name: Install Pods
         working-directory: ios/App
