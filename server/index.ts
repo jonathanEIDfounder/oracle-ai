@@ -3,7 +3,7 @@ import cors from "cors";
 import session from "express-session";
 import path from "path";
 import { storage } from "./storage";
-import { getStreamFunction, AI_PROVIDERS, queryAnthropic, queryGemini, queryOpenRouter } from "./ai-orchestrator";
+import { getStreamFunction, AI_PROVIDERS, SPECIALIST_MODES, getSpecialistSystemPrompt, queryAnthropic, queryGemini, queryOpenRouter } from "./ai-orchestrator";
 
 const app = express();
 const PORT = 5000;
@@ -29,6 +29,10 @@ app.get("/api/health", (req, res) => {
 
 app.get("/api/providers", (req, res) => {
   res.json(AI_PROVIDERS);
+});
+
+app.get("/api/specialists", (req, res) => {
+  res.json(SPECIALIST_MODES);
 });
 
 app.post("/api/auth/register", async (req, res) => {
@@ -148,11 +152,15 @@ app.delete("/api/conversations/:id", async (req, res) => {
 app.post("/api/conversations/:id/messages", async (req, res) => {
   try {
     const conversationId = parseInt(req.params.id);
-    const { content, provider = "claude", model } = req.body;
+    const { content, provider = "claude", model, specialistMode } = req.body;
     
     await storage.createMessage(conversationId, "user", content);
     const messages = await storage.getMessagesByConversation(conversationId);
-    const chatMessages = messages.map(m => ({ role: m.role, content: m.content }));
+    
+    const specialistPrompt = specialistMode ? getSpecialistSystemPrompt(specialistMode) : null;
+    const chatMessages = specialistPrompt 
+      ? [{ role: "user", content: `${specialistPrompt}\n\nUser query: ${messages[messages.length - 1].content}` }, ...messages.slice(0, -1).map(m => ({ role: m.role, content: m.content }))]
+      : messages.map(m => ({ role: m.role, content: m.content }));
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
