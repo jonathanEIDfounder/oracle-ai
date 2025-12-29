@@ -10,29 +10,21 @@ platform :ios do
       is_key_content_base64: true
     )
 
-    # Create signing certificate if needed
-    cert(
-      api_key: api_key,
-      generate_apple_certs: true,
-      keychain_path: ENV["MATCH_KEYCHAIN_NAME"],
-      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
-    )
-
-    # Get provisioning profile
+    # Download or create provisioning profile
     sigh(
       api_key: api_key,
       app_identifier: "com.oracleai.app",
       readonly: false,
-      force: true,
-      adhoc: false
+      force: true
     )
 
+    # Update project signing settings
     update_code_signing_settings(
       use_automatic_signing: false,
       path: "App/App.xcodeproj",
       team_id: ENV["APPLE_TEAM_ID"],
       profile_name: ENV["sigh_com.oracleai.app_appstore_profile-name"],
-      code_sign_identity: "iPhone Distribution"
+      code_sign_identity: "Apple Distribution"
     )
 
     # Build the app
@@ -43,7 +35,12 @@ platform :ios do
       export_method: "app-store",
       output_directory: "build",
       output_name: "OracleAI.ipa",
-      clean: true
+      clean: true,
+      export_options: {
+        provisioningProfiles: {
+          "com.oracleai.app" => ENV["sigh_com.oracleai.app_appstore_profile-name"]
+        }
+      }
     )
 
     # Upload to TestFlight
