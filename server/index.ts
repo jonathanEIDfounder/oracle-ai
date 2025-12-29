@@ -207,6 +207,95 @@ app.post("/api/oracle/analyze", async (req, res) => {
   }
 });
 
+const OWNER_EMAIL = process.env.OWNER_EMAIL || "jonathaneidfounder@gmail.com";
+const OWNER_ACCESS_KEY = process.env.OWNER_ACCESS_KEY;
+
+app.post("/api/access/generate", async (req, res) => {
+  try {
+    const { email, expiresInHours = 24 } = req.body;
+    if (email !== OWNER_EMAIL) {
+      await storage.logSecurityEvent(null, "unauthorized_key_generation_attempt", { email });
+      return res.status(403).json({ error: "Only owner can generate access keys" });
+    }
+    const { key, expiresAt } = await storage.generateAccessKey(email, expiresInHours);
+    await storage.logSecurityEvent(null, "access_key_generated", { email, expiresAt });
+    res.json({ key, expiresAt, message: "One-time access key generated. Store securely - it cannot be retrieved again." });
+  } catch (error) {
+    console.error("Key generation error:", error);
+    res.status(500).json({ error: "Failed to generate key" });
+  }
+});
+
+app.post("/api/access/validate", async (req, res) => {
+  try {
+    const { key, email } = req.body;
+    if (email !== OWNER_EMAIL) {
+      await storage.logSecurityEvent(null, "unauthorized_key_validation_attempt", { email });
+      return res.status(403).json({ error: "Access denied", valid: false });
+    }
+    const result = await storage.validateAccessKey(key, email);
+    if (result.valid) {
+      await storage.logSecurityEvent(null, "access_key_used", { email });
+      (req.session as any).ownerVerified = true;
+      (req.session as any).ownerEmail = email;
+    } else {
+      await storage.logSecurityEvent(null, "access_key_validation_failed", { email, reason: result.reason });
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Key validation error:", error);
+    res.status(500).json({ error: "Validation failed", valid: false });
+  }
+});
+
+app.get("/api/access/status", async (req, res) => {
+  try {
+    const keys = await storage.getAccessKeyStatus(OWNER_EMAIL);
+    res.json({
+      totalKeys: keys.length,
+      usedKeys: keys.filter(k => k.isUsed).length,
+      activeKeys: keys.filter(k => !k.isUsed && (!k.expiresAt || k.expiresAt > new Date())).length,
+      keys: keys.map(k => ({
+        id: k.id,
+        isUsed: k.isUsed,
+        usedAt: k.usedAt,
+        expiresAt: k.expiresAt,
+        createdAt: k.createdAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to get status" });
+  }
+});
+
+app.get("/api/access/auto-verify", async (req, res) => {
+  try {
+    if (!OWNER_ACCESS_KEY) {
+      return res.json({ verified: false, reason: "No access key configured" });
+    }
+    const result = await storage.validateAccessKey(OWNER_ACCESS_KEY, OWNER_EMAIL);
+    if (result.valid) {
+      (req.session as any).ownerVerified = true;
+      (req.session as any).ownerEmail = OWNER_EMAIL;
+      await storage.logSecurityEvent(null, "auto_verification_success", { email: OWNER_EMAIL });
+      res.json({ verified: true, owner: OWNER_EMAIL });
+    } else {
+      res.json({ verified: false, reason: result.reason });
+    }
+  } catch (error) {
+    res.status(500).json({ verified: false, error: "Auto-verification failed" });
+  }
+});
+
+app.get("/api/access/check", (req, res) => {
+  const session = req.session as any;
+  res.json({
+    ownerVerified: session.ownerVerified || false,
+    ownerEmail: session.ownerEmail || null,
+    hasConfiguredKey: !!OWNER_ACCESS_KEY
+  });
+});
+
 app.get("/{*path}", (req, res) => {
   res.sendFile(path.join(process.cwd(), "public", "index.html"));
 });
