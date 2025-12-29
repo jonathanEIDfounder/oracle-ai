@@ -37,23 +37,36 @@ jobs:
         run: gem install fastlane --no-document
       
       - name: Create API Key file
-        working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_CONTENT" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          
+          # Try base64 decode first, if fails use content directly
+          if echo "$ASC_KEY_CONTENT" | base64 --decode > "$KEY_PATH" 2>/dev/null; then
+            echo "Key decoded from base64"
+          else
+            echo "$ASC_KEY_CONTENT" > "$KEY_PATH"
+            echo "Key written directly"
+          fi
+          
+          # Verify the key file exists and has content
+          if [ -s "$KEY_PATH" ]; then
+            echo "API Key file created successfully"
+          else
+            echo "Error: API Key file is empty"
+            exit 1
+          fi
       
-      - name: Build and Upload to TestFlight
-        working-directory: ios
+      - name: Build iOS App
+        working-directory: ios/App
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          cd App
           xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Release \
@@ -66,16 +79,28 @@ jobs:
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
             archive
-          
+      
+      - name: Export IPA
+        working-directory: ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
             -exportPath build \
-            -exportOptionsPlist ../ExportOptions.plist \
+            -exportOptionsPlist ExportOptions.plist \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
             -authenticationKeyID $ASC_KEY_ID \
             -authenticationKeyIssuerID $ASC_ISSUER_ID
-          
+      
+      - name: Upload to TestFlight
+        working-directory: ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
           xcrun altool --upload-app \
             -f build/*.ipa \
             -t ios \
