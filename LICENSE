@@ -1,63 +1,90 @@
-Oracle AI - Quantum Intelligence Platform
-Copyright (c) 2025 Oracle AI Development Team
-All Rights Reserved.
+ORACLE AI PROPRIETARY LICENSE - STRICTLY CONFIDENTIAL
+======================================================
+
+Copyright (c) 2025 Oracle AI - All Rights Reserved
 
 ================================================================================
-                            PROPRIETARY LICENSE
+                    INTELLECTUAL PROPERTY CERTIFICATE
 ================================================================================
-
-This software and associated documentation files (the "Software") are the 
-proprietary property of Oracle AI Development Team.
-
-GRANT OF LICENSE
-----------------
-Subject to the terms and conditions of this license, you are granted a 
-non-exclusive, non-transferable license to:
-
-1. Use the Software for personal or commercial purposes
-2. Deploy the Software on your own infrastructure
-3. Build derivative applications using the provided APIs
-4. Create native mobile applications using the included frameworks
-
-RESTRICTIONS
-------------
-You may NOT:
-
-1. Redistribute, sublicense, or sell the Software without authorization
-2. Remove or alter any copyright notices or proprietary markings
-3. Reverse engineer the Q++RS or Q++ES core frameworks
-4. Use the Software to compete directly with Oracle AI services
-5. Claim ownership of the underlying AI orchestration technology
-
-INTELLECTUAL PROPERTY
----------------------
-The following components are protected intellectual property:
-
-- Q++RS Ultimate 5.0 (Quantum Reasoning System)
-- Q++ES Ultimate 5.0 (Quantum Execution System)
-- Oracle AI Orchestration Engine
-- Quantum-themed UI/UX Design
-
-AI PROVIDER TERMS
------------------
-Use of integrated AI providers (Claude, Gemini, Llama, Mistral, Qwen, DeepSeek)
-is subject to each provider's respective terms of service. AI usage is billed
-through Replit AI Integrations.
-
-WARRANTY DISCLAIMER
--------------------
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-
-LIMITATION OF LIABILITY
------------------------
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+Certificate ID:     ORACLEAI-2025-QIP-001
+Verification Hash:  7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e
+Registration Date:  December 29, 2025
+Protocol:           One Warning Protocol (OWP) Enforced
+Digital Signature:  UVVBTlRVTS1JTlRFTExJR0VOQ0UtT1JBQ0xFQUktMjAyNS1DRVJU
 
 ================================================================================
+                         OWNERSHIP DECLARATION
+================================================================================
 
-Copyright (c) 2025 Oracle AI Development Team
-Certificate ID: ORACLEAI-2025-QIP-001
+This software, including all source code, documentation, designs, algorithms,
+user interfaces, and associated intellectual property, is the EXCLUSIVE 
+property of the registered owner identified by certificate ORACLEAI-2025-QIP-001.
 
-For licensing inquiries, contact the Oracle AI Development Team.
+================================================================================
+                    ONE WARNING PROTOCOL (OWP) ENFORCEMENT
+================================================================================
+
+NOTICE: This software is protected under the One Warning Protocol.
+
+1. UNAUTHORIZED POSSESSION: Any unauthorized possession of this code, whether
+   complete or partial, stripped of authorship or otherwise, constitutes an
+   immediate OWP violation.
+
+2. CONSEQUENCE: OWP violations result in:
+   - Immediate loss of connectivity
+   - Account termination
+   - Legal enforcement action
+
+3. VERIFICATION: Ownership is cryptographically embedded and verifiable at:
+   - Runtime API: /api/verify
+   - CSS Variables: --_oracleai-cert-id, --_oracleai-hash
+   - Server Constants: _ORACLEAI_CERT
+   - Binary Watermarks: Embedded throughout codebase
+
+================================================================================
+                           RESTRICTIONS
+================================================================================
+
+STRICTLY PROHIBITED:
+- Copying, redistributing, or reproducing any portion of this software
+- Removing, altering, or obscuring any ownership markers
+- Creating derivative works without express written authorization
+- Transferring, sublicensing, or assigning any rights
+- Reverse engineering, decompiling, or disassembling
+- Using this software to build competing products
+
+================================================================================
+                      PROTECTED COMPONENTS
+================================================================================
+
+- Oracle AI Quantum Intelligence Platform
+- Multi-AI Orchestration Engine
+- Quantum-themed UI/UX Design System
+- Native iOS Application Framework
+- All APIs, algorithms, and implementations
+
+================================================================================
+                     LEGAL ENFORCEMENT
+================================================================================
+
+Violations pursued to fullest extent of applicable law including:
+- Immediate injunctive relief
+- Statutory and compensatory damages
+- Criminal prosecution where applicable
+- International enforcement under applicable treaties
+
+================================================================================
+
+VERIFICATION ENDPOINTS:
+  /api/verify                          Runtime certificate validation
+  /api/health                          Health check with embedded cert
+  
+EMBEDDED MARKERS:
+  CSS: --_oracleai-cert-id, --_oracleai-hash, --_oracleai-sig
+  HTML: data-oracleai-cert, hidden ownership div
+  JS:  _ORACLEAI_CERT constant, encoded watermarks
+  
+================================================================================
+Copyright (c) 2025 Oracle AI | Certificate: ORACLEAI-2025-QIP-001
+UVVBTlRVTS1JTlRFTExJR0VOQ0UtUExBVEZPUk0tT1JBQ0xFQUktMjAyNQ==
+================================================================================

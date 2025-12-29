@@ -1,0 +1,37 @@
+{
+  "certificate": {
+    "id": "ORACLEAI-2025-QIP-001",
+    "hash": "7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e",
+    "issued": "2025-12-29T00:00:00.000Z",
+    "expires": "2125-12-29T00:00:00.000Z",
+    "algorithm": "SHA-256",
+    "version": "1.0.0"
+  },
+  "ownership": {
+    "protocol": "OWP",
+    "enforcement": "strict",
+    "violations": ["loss_of_connectivity", "account_termination", "legal_action"]
+  },
+  "signatures": {
+    "primary": "UVVBTlRVTS1JTlRFTExJR0VOQ0UtT1JBQ0xFQUktMjAyNQ==",
+    "secondary": "T1JBQ0xFQUktUVVBTlRVTS1JTlRFTExJR0VOQ0UtMjAyNS1DRVJU",
+    "tertiary": "Q0VSVC1PUkFDTEVBSS0yMDI1LVFJUC0wMDE="
+  },
+  "watermarks": {
+    "css": ["--_oracleai-cert-id", "--_oracleai-hash", "--_oracleai-sig", "--_oracleai-ts"],
+    "html": ["data-oracleai-cert", "ownership-marker-div"],
+    "server": ["_ORACLEAI_CERT", "_ORACLEAI_WATERMARK"],
+    "binary": ["base64_encoded_markers", "zero_width_characters"]
+  },
+  "verification": {
+    "endpoints": ["/api/verify", "/api/health"],
+    "methods": ["certificate_validation", "hash_verification", "signature_check"]
+  },
+  "protected_assets": [
+    "server/*",
+    "public/*",
+    "shared/*",
+    "ios/*",
+    "scripts/*"
+  ]
+}

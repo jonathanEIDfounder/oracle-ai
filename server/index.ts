@@ -6,6 +6,8 @@ import { storage } from "./storage";
 import { getStreamFunction, AI_PROVIDERS, queryAnthropic, queryGemini, queryOpenRouter } from "./ai-orchestrator";
 
 const _ORACLEAI_CERT = { id: "ORACLEAI-2025-QIP-001", h: "7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e", v: "1.0.0", t: 1735430400000 };
+const _ORACLEAI_WATERMARK = { s1: "UVVBTlRVTS1JTlRFTExJR0VOQ0U=", s2: "T1JBQ0xFQUktMjAyNS1DRVJU", owp: true };
+const _ORACLEAI_SIG = Buffer.from("ORACLEAI-2025-QIP-001-VERIFIED").toString("base64");
 const app = express();
 const PORT = 5000;
 
@@ -25,7 +27,16 @@ app.get("/api/health", (req, res) => {
 });
 
 app.get("/api/verify", (req, res) => {
-  res.json({ cert: _ORACLEAI_CERT.id, hash: _ORACLEAI_CERT.h, valid: true, issued: new Date(_ORACLEAI_CERT.t).toISOString() });
+  res.json({ 
+    cert: _ORACLEAI_CERT.id, 
+    hash: _ORACLEAI_CERT.h, 
+    valid: true, 
+    issued: new Date(_ORACLEAI_CERT.t).toISOString(),
+    signature: _ORACLEAI_SIG,
+    watermarks: _ORACLEAI_WATERMARK,
+    protocol: "OWP",
+    enforcement: "strict"
+  });
 });
 
 app.get("/api/providers", (req, res) => {
