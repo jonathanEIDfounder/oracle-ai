@@ -1,3 +1,13 @@
+/**
+ * ORACLE AI - Database Schema
+ * 
+ * COPYRIGHT (C) 2024-2025 JONATHAN SHERMAN
+ * ALL RIGHTS RESERVED WORLDWIDE
+ * 
+ * All database tables are under OWP protection.
+ * Sovereign owner: Jonathan Sherman (ID: 1)
+ */
+
 import { pgTable, serial, integer, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
