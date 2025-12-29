@@ -4,20 +4,38 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 60
     
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+      tag_patterns:
+        - pattern: 'build-*'
+          include: true
+    
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.oracleai.app
       xcode: latest
       node: 20
-      groups:
-        - appstore_credentials
       vars:
         BUNDLE_ID: com.oracleai.app
+        APPLE_TEAM_ID: $APPLE_TEAM_ID
     
     scripts:
       - name: Install Node dependencies
         script: npm install
+      
+      - name: Register Bundle ID
+        script: |
+          export ASC_KEY_ID=$APP_STORE_CONNECT_KEY_IDENTIFIER
+          export ASC_ISSUER_ID=$APP_STORE_CONNECT_ISSUER_ID
+          export ASC_KEY_CONTENT=$APP_STORE_CONNECT_PRIVATE_KEY
+          export APPLE_TEAM_ID=$APPLE_TEAM_ID
+          npm run register:bundleid
         
       - name: Prepare web assets
         script: |
