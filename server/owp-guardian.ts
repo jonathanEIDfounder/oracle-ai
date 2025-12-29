@@ -1,3 +1,13 @@
+/**
+ * ORACLE AI - One Warning Protocol (OWP) Guardian
+ * 
+ * COPYRIGHT (C) 2024-2025 JONATHAN SHERMAN
+ * ALL RIGHTS RESERVED WORLDWIDE
+ * 
+ * This module enforces sovereign control across all Oracle AI instances.
+ * Unauthorized access triggers permanent device lockout.
+ */
+
 import crypto from 'crypto';
 import { storage } from './storage';
 
