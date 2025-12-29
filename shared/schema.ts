@@ -52,11 +52,23 @@ export const aiConfigs = pgTable("ai_configs", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+export const accessKeys = pgTable("access_keys", {
+  id: serial("id").primaryKey(),
+  keyHash: text("key_hash").notNull().unique(),
+  ownerEmail: text("owner_email").notNull(),
+  isUsed: boolean("is_used").notNull().default(false),
+  usedAt: timestamp("used_at"),
+  usedBy: text("used_by"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertSecurityLogSchema = createInsertSchema(securityLogs).omit({ id: true, createdAt: true });
 export const insertAiConfigSchema = createInsertSchema(aiConfigs).omit({ id: true, createdAt: true });
+export const insertAccessKeySchema = createInsertSchema(accessKeys).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -68,3 +80,5 @@ export type SecurityLog = typeof securityLogs.$inferSelect;
 export type InsertSecurityLog = z.infer<typeof insertSecurityLogSchema>;
 export type AiConfig = typeof aiConfigs.$inferSelect;
 export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
+export type AccessKey = typeof accessKeys.$inferSelect;
+export type InsertAccessKey = z.infer<typeof insertAccessKeySchema>;
