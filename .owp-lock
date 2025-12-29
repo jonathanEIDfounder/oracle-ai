@@ -1,0 +1,14 @@
+{
+  "locked": true,
+  "timestamp": "2025-12-29T05:30:00.000Z",
+  "certificate": "ORACLEAI-2025-QIP-001",
+  "hash": "7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e",
+  "protocol": "OWP",
+  "status": "ENFORCED",
+  "signatures": [
+    "UVVBTlRVTS1JTlRFTExJR0VOQ0UtT1JBQ0xFQUktMjAyNQ==",
+    "T1JBQ0xFQUktMjAyNS1RSVAtMDAxLVZFUklGSUVE",
+    "Q0VSVC1PUkFDTEVBSS0yMDI1LVFJUC0wMDE="
+  ],
+  "owner_verified": true
+}
