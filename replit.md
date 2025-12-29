@@ -110,5 +110,17 @@ Codemagic handles:
 - Admin permissions and security console
 - Quantum-themed PWA frontend
 - Capacitor iOS project for native builds
-- Codemagic cloud build integration
+- GitHub Actions iOS build workflow for automated TestFlight deployment
 - Generated 3D tessellated glass app icon
+- One-time access key system for owner-only authentication
+- Auto-verification with environment-stored access key
+
+## Access Control
+- **Owner Email**: Configured via OWNER_EMAIL environment variable
+- **Access Key**: One-time use, hashed in database, auto-verified on startup
+- **Endpoints**:
+  - `POST /api/access/generate` - Generate new key (owner only)
+  - `POST /api/access/validate` - Validate key manually
+  - `GET /api/access/auto-verify` - Auto-verify with configured key
+  - `GET /api/access/check` - Check verification status
+  - `GET /api/access/status` - View all keys
