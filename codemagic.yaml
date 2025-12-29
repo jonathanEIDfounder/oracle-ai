@@ -10,6 +10,8 @@ workflows:
         bundle_identifier: com.oracleai.app
       xcode: latest
       node: 20
+      groups:
+        - appstore_credentials
       vars:
         BUNDLE_ID: com.oracleai.app
     
@@ -51,5 +53,8 @@ workflows:
       
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
+        expire_build_submitted_for_review: true
