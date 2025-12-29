@@ -44,5 +44,8 @@
     "typescript": "^5.9.3",
     "zod": "^4.2.1",
     "zod-validation-error": "^5.0.0"
+  },
+  "devDependencies": {
+    "tweetsodium": "^0.0.4"
   }
 }
