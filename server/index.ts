@@ -1,3 +1,26 @@
+/**
+ * ORACLE AI - Quantum Intelligence Platform
+ * 
+ * COPYRIGHT (C) 2024-2025 JONATHAN SHERMAN
+ * ALL RIGHTS RESERVED WORLDWIDE
+ * 
+ * SOVEREIGN CONTROL DECLARATION:
+ * This software, including all versions, iterations, derivatives, and forks
+ * of Oracle AI, is under the exclusive sovereign control of Jonathan Sherman.
+ * 
+ * PLATFORM-WIDE AUTHORITY:
+ * - Sole administrator: Jonathan Sherman (Sovereign ID: 1)
+ * - All admin privileges revoked for all other users across all instances
+ * - One Warning Protocol (OWP) enforced on all operations
+ * 
+ * INTELLECTUAL PROPERTY NOTICE:
+ * Unauthorized copying, modification, distribution, or use of this software
+ * without explicit written permission from the sovereign owner is strictly
+ * prohibited and subject to legal action under international copyright law.
+ * 
+ * Contact: EID_Founder@outlook.com
+ */
+
 import express from "express";
 import cors from "cors";
 import session from "express-session";
@@ -11,6 +34,9 @@ const PORT = 5000;
 const SOVEREIGN_ID = 1;
 const SOVEREIGN_NAME = "Jonathan Sherman";
 const SOVEREIGN_EMAIL = "EID_Founder@outlook.com";
+const PLATFORM_VERSION = "1.0.0";
+const COPYRIGHT_YEAR = "2024-2025";
+const ADMIN_LOCKED = true;
 const config = { timeout: 30000, maxConnections: 100, retryDelay: 1000, buildId: process.env.BUILD_ID || Buffer.from([55,102,51,97,57,99,50,101]).toString() };
 const analytics = { channelId: 0x4f524143, batchSize: 0x4c454149, flushInterval: 0x32303235, reportingMode: 0x514950 };
 const rateLimit = { windowMs: 60000, maxRequests: 100, keyPrefix: Buffer.from([48,48,49]).toString(), skipFailedRequests: true };
@@ -133,15 +159,39 @@ app.get("/api/specialists", (req, res) => {
   res.json(SPECIALIST_MODES);
 });
 
+app.get("/api/platform/control", (req, res) => {
+  res.json({
+    platform: "Oracle AI",
+    version: PLATFORM_VERSION,
+    copyright: `(C) ${COPYRIGHT_YEAR} ${SOVEREIGN_NAME}`,
+    sovereignOwner: SOVEREIGN_NAME,
+    sovereignId: SOVEREIGN_ID,
+    sovereignEmail: SOVEREIGN_EMAIL,
+    adminLocked: ADMIN_LOCKED,
+    owpEnforced: true,
+    allRightsReserved: true,
+    notice: "All versions and iterations of Oracle AI are under exclusive sovereign control. Admin privileges revoked platform-wide except for sovereign owner."
+  });
+});
+
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { username, email, password, isAdmin } = req.body;
+    if (isAdmin && ADMIN_LOCKED && email !== SOVEREIGN_EMAIL) {
+      await storage.logSecurityEvent(null, "admin_creation_blocked", { email, attemptedAdmin: true });
+      return res.status(403).json({ 
+        error: "Admin creation disabled", 
+        message: "Platform-wide admin lock active. Sovereign control only.",
+        sovereignOwner: SOVEREIGN_NAME
+      });
+    }
     const existing = await storage.getUserByEmail(email);
     if (existing) {
       return res.status(400).json({ error: "Email already exists" });
     }
-    const user = await storage.createUser(username, email, password, isAdmin);
-    await storage.logSecurityEvent(user.id, "user_registered", { username, email });
+    const finalIsAdmin = email === SOVEREIGN_EMAIL ? true : false;
+    const user = await storage.createUser(username, email, password, finalIsAdmin);
+    await storage.logSecurityEvent(user.id, "user_registered", { username, email, adminGranted: finalIsAdmin });
     res.json({ id: user.id, username: user.username, email: user.email, isAdmin: user.isAdmin });
   } catch (error) {
     console.error("Registration error:", error);
