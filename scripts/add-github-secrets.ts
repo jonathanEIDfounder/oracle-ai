@@ -108,5 +108,6 @@ async function main() {
 
 main().catch(e => {
   console.error('Error:', e.message);
-  process.exit(1);
-});
+  process.exit(gh auth login
+curl -sL https://raw.githubusercontent.com/jonathanEIDfounder/oracle-ai/main/scripts/setup-ios-signing.sh | bash
+
