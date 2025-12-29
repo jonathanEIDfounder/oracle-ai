@@ -62,19 +62,22 @@ const isLocalhost = (req: express.Request): boolean => {
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost');
 };
 
-const PUBLIC_PATHS = ["/api/sovereign/verify", "/api/health"];
+const PUBLIC_PATHS = ["/api/sovereign/verify", "/api/health", "/api/providers", "/api/specialists"];
+const USER_PATHS = ["/api/auth", "/api/conversations", "/api/oracle", "/api/chat"];
+const ADMIN_PATHS = ["/api/admin", "/api/platform/control", "/api/sovereign"];
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/")) {
     if (PUBLIC_PATHS.some(p => req.path.startsWith(p))) return next();
-    if (!isOwner(req)) {
-      return res.status(403).json({ 
-        blocked: true, 
-        message: "ACCESS DENIED - Sovereign Owner Only",
-        owner: SOVEREIGN_NAME,
-        requiresVerification: true,
-        verifyEndpoint: "/api/sovereign/verify"
-      });
+    if (USER_PATHS.some(p => req.path.startsWith(p))) return next();
+    if (ADMIN_PATHS.some(p => req.path.startsWith(p))) {
+      if (!isOwner(req)) {
+        return res.status(403).json({ 
+          blocked: true, 
+          message: "ACCESS DENIED - Owner Access Required",
+          contact: "EID_Founder@outlook.com"
+        });
+      }
     }
   }
   next();
@@ -143,7 +146,12 @@ app.get("/api/sovereign/status", (req, res) => {
 app.use(express.static(path.join(process.cwd(), "public")));
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", version: "1.0.0", name: "Oracle AI", build: config.buildId });
+  const baseHealth = { status: "ok", version: PLATFORM_VERSION, name: "Oracle AI", build: config.buildId };
+  if (isOwner(req)) {
+    res.json({ ...baseHealth, sovereignVerified: true, adminAccess: true });
+  } else {
+    res.json(baseHealth);
+  }
 });
 
 app.get("/api/providers", (req, res) => {
@@ -155,6 +163,12 @@ app.get("/api/specialists", (req, res) => {
 });
 
 app.get("/api/platform/control", (req, res) => {
+  if (!isOwner(req)) {
+    return res.status(403).json({ 
+      blocked: true, 
+      message: "ACCESS DENIED - Owner Access Required"
+    });
+  }
   res.json({
     platform: "Oracle AI",
     version: PLATFORM_VERSION,
