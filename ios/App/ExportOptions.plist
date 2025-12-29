@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>development</string>
+    <string>app-store</string>
+    <key>uploadSymbols</key>
+    <true/>
     <key>compileBitcode</key>
     <false/>
-    <key>thinning</key>
-    <string>&lt;none&gt;</string>
 </dict>
 </plist>
