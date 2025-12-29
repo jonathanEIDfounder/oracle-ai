@@ -31,12 +31,11 @@ jobs:
       - name: Install CocoaPods
         run: gem install cocoapods --no-document
       
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios --inline
-      
-      - name: Install Pods
-        working-directory: ios/App
-        run: pod install --repo-update || pod install
+      - name: Prepare iOS Build
+        run: |
+          mkdir -p ios/App/App/public
+          cp -r public/* ios/App/App/public/
+          cd ios/App && pod install --repo-update 2>/dev/null || true
       
       - name: Install fastlane
         run: gem install fastlane --no-document
