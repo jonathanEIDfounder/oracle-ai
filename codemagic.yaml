@@ -1,56 +1,63 @@
 workflows:
-  ios-build:
-    name: Oracle AI iOS Build
+  ios-app:
+    name: Oracle AI iOS
     instance_type: mac_mini_m2
     max_build_duration: 60
-    
-    integrations:
-      app_store_connect: Oracle AI ASC
     
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.oracleai.app
-      xcode: 15.4
+      xcode: latest
       node: 20
       vars:
         BUNDLE_ID: com.oracleai.app
-      
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
     
     scripts:
-      - name: Install dependencies
+      - name: Install Node dependencies
         script: npm install
         
-      - name: Build web assets
-        script: npm run build 2>/dev/null || echo "No build script"
-        
-      - name: Prepare iOS
+      - name: Prepare web assets
         script: |
           mkdir -p ios/App/App/public
           cp -r public/* ios/App/App/public/
-          cd ios/App && pod install
-          
-      - name: Build iOS
+        
+      - name: Install CocoaPods
         script: |
           cd ios/App
-          xcode-project build-ipa \
-            --workspace App.xcworkspace \
-            --scheme App \
-            --config Release
+          pod install --repo-update
+          
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+          
+      - name: Build iOS app
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            archive
+          
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist ExportOptions.plist
     
     artifacts:
-      - ios/App/build/ios/ipa/*.ipa
+      - ios/App/build/*.ipa
       - /tmp/xcodebuild_logs/*.log
       
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        beta_groups:
-          - Internal Testers
