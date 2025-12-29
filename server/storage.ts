@@ -1,7 +1,8 @@
 import { db } from "./db";
-import { users, conversations, messages, securityLogs, aiConfigs } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { users, conversations, messages, securityLogs, aiConfigs, accessKeys } from "@shared/schema";
+import { eq, desc, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 export const storage = {
   async createUser(username: string, email: string, password: string, isAdmin: boolean = false) {
@@ -97,5 +98,42 @@ export const storage = {
   async createAiConfig(name: string, provider: string, model: string, config: object = {}) {
     const [aiConfig] = await db.insert(aiConfigs).values({ name, provider, model, config }).returning();
     return aiConfig;
+  },
+
+  async generateAccessKey(ownerEmail: string, expiresInHours: number = 24) {
+    const rawKey = crypto.randomBytes(32).toString('hex');
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+    
+    await db.insert(accessKeys).values({
+      keyHash,
+      ownerEmail,
+      isUsed: false,
+      expiresAt,
+    });
+    
+    return { key: rawKey, expiresAt };
+  },
+
+  async validateAccessKey(key: string, email: string) {
+    const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+    const [accessKey] = await db.select().from(accessKeys)
+      .where(and(eq(accessKeys.keyHash, keyHash), eq(accessKeys.ownerEmail, email)));
+    
+    if (!accessKey) return { valid: false, reason: 'Invalid key' };
+    if (accessKey.isUsed) return { valid: false, reason: 'Key already used' };
+    if (accessKey.expiresAt && accessKey.expiresAt < new Date()) return { valid: false, reason: 'Key expired' };
+    
+    await db.update(accessKeys)
+      .set({ isUsed: true, usedAt: new Date(), usedBy: email })
+      .where(eq(accessKeys.id, accessKey.id));
+    
+    return { valid: true, accessKey };
+  },
+
+  async getAccessKeyStatus(ownerEmail: string) {
+    return db.select().from(accessKeys)
+      .where(eq(accessKeys.ownerEmail, ownerEmail))
+      .orderBy(desc(accessKeys.createdAt));
   },
 };
