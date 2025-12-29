@@ -23,13 +23,20 @@ jobs:
       - name: Build web assets
         run: npm run build 2>/dev/null || echo "No build script"
       
-      - name: Sync Capacitor
-        run: npx cap sync ios
-      
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
+      
+      - name: Install CocoaPods
+        run: gem install cocoapods --no-document
+      
+      - name: Sync Capacitor
+        run: npx cap sync ios
+      
+      - name: Install Pods
+        working-directory: ios/App
+        run: pod install --repo-update
       
       - name: Install fastlane
         run: gem install fastlane --no-document
