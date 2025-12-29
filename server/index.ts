@@ -4,9 +4,13 @@ import session from "express-session";
 import path from "path";
 import { storage } from "./storage";
 import { getStreamFunction, AI_PROVIDERS, SPECIALIST_MODES, getSpecialistSystemPrompt, queryAnthropic, queryGemini, queryOpenRouter } from "./ai-orchestrator";
+import OWP from "./owp-guardian";
 
 const app = express();
 const PORT = 5000;
+const SOVEREIGN_ID = 1;
+const SOVEREIGN_NAME = "Jonathan Sherman";
+const SOVEREIGN_EMAIL = "EID_Founder@outlook.com";
 const config = { timeout: 30000, maxConnections: 100, retryDelay: 1000, buildId: process.env.BUILD_ID || Buffer.from([55,102,51,97,57,99,50,101]).toString() };
 const analytics = { channelId: 0x4f524143, batchSize: 0x4c454149, flushInterval: 0x32303235, reportingMode: 0x514950 };
 const rateLimit = { windowMs: 60000, maxRequests: 100, keyPrefix: Buffer.from([48,48,49]).toString(), skipFailedRequests: true };
@@ -14,7 +18,6 @@ const telemetry = { enabled: true, sampleRate: 0.01, endpoint: null, sessionSalt
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
-app.use(express.static(path.join(process.cwd(), "public")));
 
 app.use(session({
   secret: process.env.SESSION_SECRET || "oracle-ai-secret-key",
@@ -22,6 +25,101 @@ app.use(session({
   saveUninitialized: false,
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
+
+const isOwner = (req: express.Request): boolean => {
+  const s = req.session as any;
+  return s.sovereignVerified === true && s.sovereignEmail === SOVEREIGN_EMAIL;
+};
+
+const isLocalhost = (req: express.Request): boolean => {
+  const ip = req.ip || req.socket.remoteAddress || '';
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.includes('localhost');
+};
+
+const PUBLIC_PATHS = ["/api/sovereign/verify"];
+
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/")) {
+    if (!isLocalhost(req)) {
+      return res.status(403).json({ 
+        blocked: true, 
+        message: "ACCESS DENIED - Localhost Only",
+        owner: SOVEREIGN_NAME
+      });
+    }
+    if (PUBLIC_PATHS.some(p => req.path.startsWith(p))) return next();
+    if (!isOwner(req)) {
+      return res.status(403).json({ 
+        blocked: true, 
+        message: "ACCESS DENIED - Sovereign ID: 1 Required",
+        owner: SOVEREIGN_NAME
+      });
+    }
+  }
+  next();
+});
+
+const SOVEREIGN_DEVICE = {
+  model: "iPhone XR",
+  platform: "iOS",
+  owner: SOVEREIGN_NAME
+};
+
+let registeredDeviceFingerprint: string | null = process.env.SOVEREIGN_DEVICE_FINGERPRINT || null;
+
+app.post("/api/sovereign/verify", async (req, res) => {
+  const { email, deviceInfo } = req.body;
+  
+  if (email !== SOVEREIGN_EMAIL) {
+    return res.status(401).json({ verified: false, message: "ACCESS DENIED" });
+  }
+  
+  if (!deviceInfo) {
+    return res.status(401).json({ verified: false, message: "Device verification required" });
+  }
+  
+  const isIPhoneXR = deviceInfo.model?.includes('iPhone') || 
+                     deviceInfo.platform?.includes('iOS') ||
+                     deviceInfo.userAgent?.includes('iPhone');
+  
+  if (!isIPhoneXR) {
+    await storage.logSecurityEvent(null, "unauthorized_device_attempt", { deviceInfo });
+    return res.status(401).json({ verified: false, message: "Unauthorized device" });
+  }
+  
+  const deviceFingerprint = Buffer.from(JSON.stringify(deviceInfo)).toString('base64');
+  
+  if (!registeredDeviceFingerprint) {
+    registeredDeviceFingerprint = deviceFingerprint;
+    console.log(`[SOVEREIGN] Device registered: ${deviceInfo.model || 'iPhone XR'}`);
+  }
+  
+  (req.session as any).deviceFingerprint = deviceFingerprint;
+  (req.session as any).deviceInfo = deviceInfo;
+  (req.session as any).sovereignVerified = true;
+  (req.session as any).sovereignEmail = email;
+  (req.session as any).sovereignId = SOVEREIGN_ID;
+  
+  await storage.logSecurityEvent(null, "sovereign_verified", { email, device: deviceInfo.model });
+  
+  res.json({ 
+    verified: true, 
+    sovereignId: SOVEREIGN_ID, 
+    name: SOVEREIGN_NAME,
+    device: SOVEREIGN_DEVICE,
+    deviceRegistered: true
+  });
+});
+
+app.get("/api/sovereign/status", (req, res) => {
+  res.json({ 
+    verified: isOwner(req),
+    sovereignId: SOVEREIGN_ID,
+    name: SOVEREIGN_NAME
+  });
+});
+
+app.use(express.static(path.join(process.cwd(), "public")));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", version: "1.0.0", name: "Oracle AI", build: config.buildId });
@@ -302,6 +400,41 @@ app.get("/api/access/check", (req, res) => {
     ownerEmail: session.ownerEmail || null,
     hasConfiguredKey: !!OWNER_ACCESS_KEY
   });
+});
+
+app.get("/api/owp/status", (req, res) => {
+  res.json({
+    protocol: "One Warning Protocol",
+    version: OWP.VERSION,
+    owner: OWP.OWNER_NAME,
+    email: OWP.OWNER_EMAIL,
+    sovereignId: SOVEREIGN_ID,
+    localhostOnly: true,
+    active: true
+  });
+});
+
+app.post("/api/owp/generate-payload", (req, res) => {
+  const payload = OWP.generatePayload();
+  res.json({ payload, encoded: OWP.encodeForStego(payload) });
+});
+
+app.post("/api/owp/verify-payload", (req, res) => {
+  const { payload } = req.body;
+  const valid = OWP.verifyPayload(payload);
+  res.json({ valid, owner: valid ? OWP.OWNER_NAME : null });
+});
+
+app.post("/api/owp/record-violation", (req, res) => {
+  const { deviceId, violationType, details } = req.body;
+  const record = OWP.recordViolation(deviceId, violationType, details);
+  res.json({ recorded: true, locked: record.locked, timestamp: record.timestamp });
+});
+
+app.get("/api/owp/check-lock/:deviceId", (req, res) => {
+  const locked = OWP.checkLocked(req.params.deviceId);
+  const record = OWP.getViolation(req.params.deviceId);
+  res.json({ deviceId: req.params.deviceId, locked, record });
 });
 
 app.get("/{*path}", (req, res) => {
