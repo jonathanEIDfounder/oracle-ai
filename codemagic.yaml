@@ -20,12 +20,12 @@ workflows:
       - name: Prepare web assets
         script: |
           mkdir -p ios/App/App/public
-          cp -r public/* ios/App/App/public/
+          cp -r public/* ios/App/App/public/ || true
         
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install --repo-update
+          pod install --repo-update || pod install
           
       - name: Set up code signing
         script: |
@@ -39,25 +39,17 @@ workflows:
       - name: Build iOS app
         script: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/App.xcarchive \
-            archive
-          
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist ExportOptions.plist
+          xcode-project build-ipa \
+            --workspace App.xcworkspace \
+            --scheme App
     
     artifacts:
+      - build/ios/ipa/*.ipa
       - ios/App/build/*.ipa
+      - "**/*.ipa"
       - /tmp/xcodebuild_logs/*.log
       
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
