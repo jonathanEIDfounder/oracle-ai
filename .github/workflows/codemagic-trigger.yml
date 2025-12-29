@@ -1,0 +1,29 @@
+name: Trigger Codemagic iOS Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-codemagic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Codemagic Build
+        run: |
+          response=$(curl -s -X POST https://api.codemagic.io/builds \
+            -H "Content-Type: application/json" \
+            -H "x-auth-token: ${{ secrets.CM_API_TOKEN }}" \
+            --data '{
+              "appId": "${{ secrets.CM_APP_ID }}",
+              "workflowId": "ios-app",
+              "branch": "main"
+            }')
+          echo "Response: $response"
+          buildId=$(echo $response | jq -r '.buildId // empty')
+          if [ -n "$buildId" ]; then
+            echo "Build started: $buildId"
+            echo "View at: https://codemagic.io/build/$buildId"
+          else
+            echo "Build trigger response: $response"
+          fi
