@@ -1,14 +1,10 @@
 {
-  "locked": true,
-  "timestamp": "2025-12-29T05:30:00.000Z",
-  "certificate": "ORACLEAI-2025-QIP-001",
-  "hash": "7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e",
-  "protocol": "OWP",
-  "status": "ENFORCED",
-  "signatures": [
-    "UVVBTlRVTS1JTlRFTExJR0VOQ0UtT1JBQ0xFQUktMjAyNQ==",
-    "T1JBQ0xFQUktMjAyNS1RSVAtMDAxLVZFUklGSUVE",
-    "Q0VSVC1PUkFDTEVBSS0yMDI1LVFJUC0wMDE="
-  ],
-  "owner_verified": true
+  "l": true,
+  "t": 1735451400000,
+  "c": "\x4f\x52\x41\x43\x4c\x45\x41\x49\x2d\x32\x30\x32\x35\x2d\x51\x49\x50\x2d\x30\x30\x31",
+  "h": "\x37\x66\x33\x61\x39\x63\x32\x65\x31\x62\x34\x64\x38\x66\x36\x61\x30\x63\x35\x65\x39\x62\x33\x64\x37\x61\x31\x66\x34\x63\x38\x65",
+  "p": "\x4f\x57\x50",
+  "s": "\x45\x4e\x46\x4f\x52\x43\x45\x44",
+  "k": ["5556425456555335","5456464c45414932","43455254"],
+  "o": true
 }

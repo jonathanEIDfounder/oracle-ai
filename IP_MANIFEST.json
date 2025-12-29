@@ -1,37 +1,25 @@
 {
-  "certificate": {
-    "id": "ORACLEAI-2025-QIP-001",
-    "hash": "7f3a9c2e1b4d8f6a0c5e9b3d7a1f4c8e",
-    "issued": "2025-12-29T00:00:00.000Z",
-    "expires": "2125-12-29T00:00:00.000Z",
-    "algorithm": "SHA-256",
-    "version": "1.0.0"
+  "v": "1.0.0",
+  "c": {
+    "i": "\x4f\x52\x41\x43\x4c\x45\x41\x49\x2d\x32\x30\x32\x35\x2d\x51\x49\x50\x2d\x30\x30\x31",
+    "h": "\x37\x66\x33\x61\x39\x63\x32\x65\x31\x62\x34\x64\x38\x66\x36\x61\x30\x63\x35\x65\x39\x62\x33\x64\x37\x61\x31\x66\x34\x63\x38\x65",
+    "d": 1735430400000,
+    "e": 4891104000000
   },
-  "ownership": {
-    "protocol": "OWP",
-    "enforcement": "strict",
-    "violations": ["loss_of_connectivity", "account_termination", "legal_action"]
+  "o": {
+    "p": "\x4f\x57\x50",
+    "e": "\x73\x74\x72\x69\x63\x74",
+    "v": [1, 2, 3]
   },
-  "signatures": {
-    "primary": "UVVBTlRVTS1JTlRFTExJR0VOQ0UtT1JBQ0xFQUktMjAyNQ==",
-    "secondary": "T1JBQ0xFQUktUVVBTlRVTS1JTlRFTExJR0VOQ0UtMjAyNS1DRVJU",
-    "tertiary": "Q0VSVC1PUkFDTEVBSS0yMDI1LVFJUC0wMDE="
+  "s": {
+    "a": "5556425456555335",
+    "b": "5456464c45414932",
+    "c": "43455254"
   },
-  "watermarks": {
-    "css": ["--_oracleai-cert-id", "--_oracleai-hash", "--_oracleai-sig", "--_oracleai-ts"],
-    "html": ["data-oracleai-cert", "ownership-marker-div"],
-    "server": ["_ORACLEAI_CERT", "_ORACLEAI_WATERMARK"],
-    "binary": ["base64_encoded_markers", "zero_width_characters"]
-  },
-  "verification": {
-    "endpoints": ["/api/verify", "/api/health"],
-    "methods": ["certificate_validation", "hash_verification", "signature_check"]
-  },
-  "protected_assets": [
-    "server/*",
-    "public/*",
-    "shared/*",
-    "ios/*",
-    "scripts/*"
+  "m": [
+    {"f": "server/*", "t": 1},
+    {"f": "public/*", "t": 2},
+    {"f": "shared/*", "t": 1},
+    {"f": "ios/*", "t": 3}
   ]
 }
