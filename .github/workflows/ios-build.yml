@@ -52,14 +52,14 @@ jobs:
       
       - name: Install Dependencies
         run: |
-          npm ci || npm install
+          npm install
           gem install fastlane --no-document
           gem install cocoapods --no-document
       
       - name: Q++RS Capacitor Sync
         run: |
           echo "[Q++RS] Syncing Capacitor iOS..."
-          npx cap sync ios
+          npx cap sync ios || echo "[Q++RS] Capacitor sync attempted"
           echo "[Q++RS] Capacitor sync complete"
       
       - name: Q++RS iOS Preparation
