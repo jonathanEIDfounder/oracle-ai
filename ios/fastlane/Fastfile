@@ -4,9 +4,10 @@
 # Author: Jonathan Sherman
 # Sovereign ID: 1
 # Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+# Signature: Sm9uYXRoYW4gU2hlcm1hbjo6U292ZXJlaWduOjoxOjpPcmFjbGVBSTo6USsrUlM=
 # 
 # AUTONOMOUS iOS SIGNING & TESTFLIGHT DEPLOYMENT
-# Zero manual intervention - fully automated certificate management
+# Zero manual intervention - fully automated certificate management via match
 # ═══════════════════════════════════════════════════════════════════════════════
 
 default_platform(:ios)
@@ -14,6 +15,7 @@ default_platform(:ios)
 QPPRS_VERSION = "5.0"
 BUNDLE_ID = "com.oracleai.app"
 AUTHOR = "Jonathan Sherman"
+SOVEREIGN_ID = 1
 
 platform :ios do
   before_all do
@@ -22,17 +24,22 @@ platform :ios do
     puts "║     Q++RS ULTIMATE #{QPPRS_VERSION} - QUANTUM RAPID SIGNING SYSTEM       ║"
     puts "║                                                              ║"
     puts "║  Author: #{AUTHOR}                                    ║"
+    puts "║  Sovereign ID: #{SOVEREIGN_ID}                                            ║"
     puts "║  Bundle: #{BUNDLE_ID}                              ║"
-    puts "║  Mode: AUTONOMOUS SIGNING                                    ║"
+    puts "║  Mode: AUTONOMOUS SIGNING (match)                           ║"
     puts "╚══════════════════════════════════════════════════════════════╝"
     puts ""
+    
+    if ENV['CI']
+      puts "[Q++RS] CI Environment detected - setting up keychain..."
+      setup_ci
+    end
   end
 
   desc "Q++RS Autonomous Build and TestFlight Upload"
   lane :release do
     puts "[Q++RS] Initializing App Store Connect API..."
     
-    # Detect if key content is base64 encoded
     key_content = ENV["ASC_KEY_CONTENT"]
     is_base64 = !key_content.to_s.include?("-----BEGIN")
     
@@ -44,31 +51,24 @@ platform :ios do
     )
     
     puts "[Q++RS] API Key authenticated successfully"
-    puts "[Q++RS] Auto-generating distribution certificate..."
+    puts "[Q++RS] Syncing certificates via match..."
 
-    # Q++RS: Auto-generate distribution certificate
-    cert(
-      api_key: api_key,
-      generate_apple_certs: true,
-      force: false
-    )
-    
-    puts "[Q++RS] Certificate ready"
-    puts "[Q++RS] Generating provisioning profile..."
-
-    # Auto-generate or download provisioning profile
-    sigh(
-      api_key: api_key,
+    match(
+      type: "appstore",
       app_identifier: BUNDLE_ID,
-      readonly: false,
-      force: true,
-      adhoc: false
+      api_key: api_key,
+      readonly: is_ci,
+      force_for_new_devices: true,
+      verbose: true
     )
     
-    puts "[Q++RS] Provisioning profile ready"
-    puts "[Q++RS] Starting Xcode build..."
+    puts "[Q++RS] Certificates synced"
+    puts "[Q++RS] Building with Xcode..."
 
-    # Build with Q++RS autonomous signing
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M")
+    )
+
     gym(
       workspace: "App/App.xcworkspace",
       scheme: "App",
@@ -79,19 +79,21 @@ platform :ios do
       clean: true,
       xcargs: "-allowProvisioningUpdates",
       export_options: {
-        signingStyle: "automatic",
+        signingStyle: "manual",
         uploadSymbols: true,
-        compileBitcode: false
+        compileBitcode: false,
+        provisioningProfiles: {
+          BUNDLE_ID => "match AppStore #{BUNDLE_ID}"
+        }
       }
     )
     
     puts "[Q++RS] Build complete - uploading to TestFlight..."
 
-    # Upload to TestFlight
     pilot(
       api_key: api_key,
       skip_waiting_for_build_processing: true,
-      changelog: "Q++RS Ultimate #{QPPRS_VERSION} Build\nAuthor: #{AUTHOR}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
+      changelog: "Q++RS Ultimate #{QPPRS_VERSION} Build\nAuthor: #{AUTHOR}\nSovereign ID: #{SOVEREIGN_ID}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
     )
 
     puts ""
@@ -105,8 +107,8 @@ platform :ios do
     puts ""
   end
 
-  desc "Q++RS Build Only (no TestFlight upload)"
-  lane :build_only do
+  desc "Q++RS Initialize Match Certificates (first-time setup)"
+  lane :setup_certs do
     key_content = ENV["ASC_KEY_CONTENT"]
     is_base64 = !key_content.to_s.include?("-----BEGIN")
     
@@ -117,25 +119,16 @@ platform :ios do
       is_key_content_base64: is_base64
     )
 
-    sigh(
-      api_key: api_key,
+    puts "[Q++RS] Creating distribution certificate..."
+    match(
+      type: "appstore",
       app_identifier: BUNDLE_ID,
+      api_key: api_key,
       readonly: false,
       force: true
     )
-
-    gym(
-      workspace: "App/App.xcworkspace",
-      scheme: "App",
-      configuration: "Release",
-      export_method: "app-store",
-      output_directory: "build",
-      output_name: "OracleAI.ipa",
-      clean: true,
-      xcargs: "-allowProvisioningUpdates"
-    )
     
-    puts "[Q++RS] Build complete - IPA ready at build/OracleAI.ipa"
+    puts "[Q++RS] Certificates stored in match repository"
   end
 
   error do |lane, exception|
