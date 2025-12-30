@@ -1,16 +1,28 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Q++RS Ultimate 5.0 - Autonomous iOS Signing & TestFlight Deployment
+# Author: Jonathan Sherman
+# Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 default_platform(:ios)
 
 platform :ios do
-  desc "Build and upload to TestFlight"
+  desc "Q++RS Autonomous Build and TestFlight Upload"
   lane :release do
+    puts "╔══════════════════════════════════════════════════════════════╗"
+    puts "║  Q++RS ULTIMATE 5.0 - AUTONOMOUS SIGNING                     ║"
+    puts "║  Author: Jonathan Sherman                                    ║"
+    puts "╚══════════════════════════════════════════════════════════════╝"
+
+    # Connect to App Store Connect API
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
       key_content: ENV["ASC_KEY_CONTENT"],
-      is_key_content_base64: true
+      is_key_content_base64: false
     )
 
-    # Download or create provisioning profile
+    # Auto-generate provisioning profile via App Store Connect
     sigh(
       api_key: api_key,
       app_identifier: "com.oracleai.app",
@@ -18,16 +30,7 @@ platform :ios do
       force: true
     )
 
-    # Update project signing settings
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: "App/App.xcodeproj",
-      team_id: ENV["APPLE_TEAM_ID"],
-      profile_name: ENV["sigh_com.oracleai.app_appstore_profile-name"],
-      code_sign_identity: "Apple Distribution"
-    )
-
-    # Build the app
+    # Build with automatic signing
     gym(
       workspace: "App/App.xcworkspace",
       scheme: "App",
@@ -36,17 +39,39 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      export_options: {
-        provisioningProfiles: {
-          "com.oracleai.app" => ENV["sigh_com.oracleai.app_appstore_profile-name"]
-        }
-      }
+      xcargs: "-allowProvisioningUpdates"
     )
 
     # Upload to TestFlight
     pilot(
       api_key: api_key,
-      skip_waiting_for_build_processing: true
+      skip_waiting_for_build_processing: true,
+      changelog: "Q++RS Ultimate 5.0 Autonomous Build - #{Time.now.strftime('%Y-%m-%d %H:%M')}"
+    )
+
+    puts "╔══════════════════════════════════════════════════════════════╗"
+    puts "║  Q++RS BUILD COMPLETE - TESTFLIGHT UPLOAD SUCCESSFUL         ║"
+    puts "╚══════════════════════════════════════════════════════════════╝"
+  end
+
+  desc "Q++RS Build Only (no upload)"
+  lane :build_only do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_CONTENT"],
+      is_key_content_base64: false
+    )
+
+    gym(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "OracleAI.ipa",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
     )
   end
 end
