@@ -1,36 +1,64 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# Q++RS Ultimate 5.0 - Autonomous iOS Signing & TestFlight Deployment
+# Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════════
 # Author: Jonathan Sherman
+# Sovereign ID: 1
 # Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+# 
+# AUTONOMOUS iOS SIGNING & TESTFLIGHT DEPLOYMENT
+# Zero manual intervention - fully automated certificate management
 # ═══════════════════════════════════════════════════════════════════════════════
 
 default_platform(:ios)
 
+QPPRS_VERSION = "5.0"
+BUNDLE_ID = "com.oracleai.app"
+AUTHOR = "Jonathan Sherman"
+
 platform :ios do
+  before_all do
+    puts ""
+    puts "╔══════════════════════════════════════════════════════════════╗"
+    puts "║     Q++RS ULTIMATE #{QPPRS_VERSION} - QUANTUM RAPID SIGNING SYSTEM       ║"
+    puts "║                                                              ║"
+    puts "║  Author: #{AUTHOR}                                    ║"
+    puts "║  Bundle: #{BUNDLE_ID}                              ║"
+    puts "║  Mode: AUTONOMOUS SIGNING                                    ║"
+    puts "╚══════════════════════════════════════════════════════════════╝"
+    puts ""
+  end
+
   desc "Q++RS Autonomous Build and TestFlight Upload"
   lane :release do
-    puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║  Q++RS ULTIMATE 5.0 - AUTONOMOUS SIGNING                     ║"
-    puts "║  Author: Jonathan Sherman                                    ║"
-    puts "╚══════════════════════════════════════════════════════════════╝"
-
-    # Connect to App Store Connect API
+    puts "[Q++RS] Initializing App Store Connect API..."
+    
+    # Detect if key content is base64 encoded
+    key_content = ENV["ASC_KEY_CONTENT"]
+    is_base64 = !key_content.to_s.include?("-----BEGIN")
+    
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
-      key_content: ENV["ASC_KEY_CONTENT"],
-      is_key_content_base64: false
+      key_content: key_content,
+      is_key_content_base64: is_base64
     )
+    
+    puts "[Q++RS] API Key authenticated successfully"
+    puts "[Q++RS] Generating provisioning profile..."
 
-    # Auto-generate provisioning profile via App Store Connect
+    # Auto-generate or download provisioning profile
     sigh(
       api_key: api_key,
-      app_identifier: "com.oracleai.app",
+      app_identifier: BUNDLE_ID,
       readonly: false,
-      force: true
+      force: true,
+      adhoc: false
     )
+    
+    puts "[Q++RS] Provisioning profile ready"
+    puts "[Q++RS] Starting Xcode build..."
 
-    # Build with automatic signing
+    # Build with Q++RS autonomous signing
     gym(
       workspace: "App/App.xcworkspace",
       scheme: "App",
@@ -39,28 +67,51 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates"
+      xcargs: "-allowProvisioningUpdates",
+      export_options: {
+        signingStyle: "automatic",
+        uploadSymbols: true,
+        compileBitcode: false
+      }
     )
+    
+    puts "[Q++RS] Build complete - uploading to TestFlight..."
 
     # Upload to TestFlight
     pilot(
       api_key: api_key,
       skip_waiting_for_build_processing: true,
-      changelog: "Q++RS Ultimate 5.0 Autonomous Build - #{Time.now.strftime('%Y-%m-%d %H:%M')}"
+      changelog: "Q++RS Ultimate #{QPPRS_VERSION} Build\nAuthor: #{AUTHOR}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
     )
 
+    puts ""
     puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║  Q++RS BUILD COMPLETE - TESTFLIGHT UPLOAD SUCCESSFUL         ║"
+    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - BUILD & UPLOAD COMPLETE            ║"
+    puts "║                                                              ║"
+    puts "║  Status: SUCCESS                                             ║"
+    puts "║  Destination: TestFlight                                     ║"
+    puts "║  Author: #{AUTHOR}                                    ║"
     puts "╚══════════════════════════════════════════════════════════════╝"
+    puts ""
   end
 
-  desc "Q++RS Build Only (no upload)"
+  desc "Q++RS Build Only (no TestFlight upload)"
   lane :build_only do
+    key_content = ENV["ASC_KEY_CONTENT"]
+    is_base64 = !key_content.to_s.include?("-----BEGIN")
+    
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
-      key_content: ENV["ASC_KEY_CONTENT"],
-      is_key_content_base64: false
+      key_content: key_content,
+      is_key_content_base64: is_base64
+    )
+
+    sigh(
+      api_key: api_key,
+      app_identifier: BUNDLE_ID,
+      readonly: false,
+      force: true
     )
 
     gym(
@@ -73,5 +124,17 @@ platform :ios do
       clean: true,
       xcargs: "-allowProvisioningUpdates"
     )
+    
+    puts "[Q++RS] Build complete - IPA ready at build/OracleAI.ipa"
+  end
+
+  error do |lane, exception|
+    puts ""
+    puts "╔══════════════════════════════════════════════════════════════╗"
+    puts "║  Q++RS ERROR - BUILD FAILED                                  ║"
+    puts "╚══════════════════════════════════════════════════════════════╝"
+    puts ""
+    puts "Error: #{exception.message}"
+    puts ""
   end
 end
