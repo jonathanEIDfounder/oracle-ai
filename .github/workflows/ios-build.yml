@@ -1,12 +1,6 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-# Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM
-# ═══════════════════════════════════════════════════════════════════════════════
-# Author: Jonathan Sherman
-# Sovereign ID: 1
-# Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
-# Oracle AI Platform - Autonomous iOS Build & TestFlight Deployment
-# Signature: Sm9uYXRoYW4gU2hlcm1hbjo6U292ZXJlaWduOjoxOjpPcmFjbGVBSTo6USsrUlM=
-# ═══════════════════════════════════════════════════════════════════════════════
+# Q++RS Ultimate 5.0 - Quantum Rapid Signing System
+# Author: Jonathan Sherman | Sovereign ID: 1
+# Copyright 2024-2025 Jonathan Sherman. All Rights Reserved.
 
 name: Q++RS Ultimate 5.0 TestFlight
 
@@ -18,7 +12,6 @@ on:
 env:
   BUNDLE_ID: com.oracleai.app
   QPPRS_VERSION: "5.0"
-  AUTHOR: "Jonathan Sherman"
 
 jobs:
   qpprs-testflight:
@@ -26,16 +19,10 @@ jobs:
     timeout-minutes: 45
     
     steps:
-      - name: Q++RS Ultimate 5.0 Initialize
+      - name: Q++RS Initialize
         run: |
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║     Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM        ║"
-          echo "║                                                              ║"
-          echo "║  Author: Jonathan Sherman                                    ║"
-          echo "║  Sovereign ID: 1                                             ║"
-          echo "║  Target: TestFlight                                          ║"
-          echo "║  Copyright (c) 2024-2025 All Rights Reserved                 ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo "Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM"
+          echo "Author: Jonathan Sherman | Sovereign ID: 1"
 
       - uses: actions/checkout@v4
       
@@ -50,54 +37,40 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
       
-      - name: Install Node Dependencies
-        run: npm install
-
-      - name: Install Ruby Dependencies  
+      - name: Install Dependencies
         run: |
+          npm install
           gem install fastlane --no-document
           gem install cocoapods --no-document
 
       - name: Q++RS Capacitor Sync
-        run: |
-          echo "[Q++RS] Syncing Capacitor iOS..."
-          npx cap sync ios || true
-          echo "[Q++RS] Capacitor sync complete"
+        run: npx cap sync ios || true
       
       - name: Q++RS iOS Preparation
         run: |
-          echo "[Q++RS] Preparing iOS build environment..."
           mkdir -p ios/App/App/public
-          echo '{"author":"Jonathan Sherman","sovereignId":1,"version":"1.0.0","system":"Q++RS Ultimate 5.0"}' > ios/App/App/public/manifest.json
-          cd ios/App
-          pod install --repo-update || pod install || true
-          echo "[Q++RS] iOS preparation complete"
+          echo '{"author":"Jonathan Sherman","sovereignId":1}' > ios/App/App/public/manifest.json
+          cd ios/App && pod install --repo-update || pod install || true
 
-      - name: Q++RS Setup CI Keychain
+      - name: Q++RS Setup Keychain
         run: |
-          echo "[Q++RS] Setting up CI keychain..."
           security create-keychain -p "" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
-          echo "[Q++RS] Keychain ready"
 
-      - name: Q++RS Autonomous Signing & TestFlight
+      - name: Q++RS Build and Deploy
         working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 180
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
         run: |
-          echo "[Q++RS] Starting autonomous build pipeline..."
-          
-          # Create API key file
+          echo "[Q++RS] Configuring API key..."
           mkdir -p ~/.appstoreconnect/private_keys
           if echo "$ASC_KEY_CONTENT" | base64 -d > /dev/null 2>&1; then
             echo "$ASC_KEY_CONTENT" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
@@ -105,74 +78,23 @@ jobs:
             echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
           fi
           chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          echo "[Q++RS] API key configured"
           
-          # Import certificate if provided
           if [ -n "$APPLE_CERTIFICATE_BASE64" ]; then
-            echo "[Q++RS] Importing distribution certificate..."
+            echo "[Q++RS] Importing certificate..."
             echo "$APPLE_CERTIFICATE_BASE64" | base64 -d > /tmp/cert.p12
-            security import /tmp/cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-            rm /tmp/cert.p12
-            echo "[Q++RS] Certificate imported"
+            security import /tmp/cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security || true
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain || true
+            rm -f /tmp/cert.p12
           fi
           
-          # Run fastlane
-          echo "[Q++RS] Executing fastlane release..."
-          fastlane release || {
-            echo "[Q++RS] Fastlane failed, attempting direct xcodebuild..."
-            cd App
-            
-            xcodebuild -workspace App.xcworkspace \
-              -scheme App \
-              -configuration Release \
-              -destination 'generic/platform=iOS' \
-              -archivePath ../build/OracleAI.xcarchive \
-              archive \
-              CODE_SIGN_STYLE=Automatic \
-              DEVELOPMENT_TEAM="${APPLE_TEAM_ID}" \
-              -allowProvisioningUpdates \
-              -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
-              -authenticationKeyID "${ASC_KEY_ID}" \
-              -authenticationKeyIssuerID "${ASC_ISSUER_ID}" || true
-            
-            if [ -d "../build/OracleAI.xcarchive" ]; then
-              echo "[Q++RS] Archive created, exporting..."
-              cat > ../ExportOptions.plist << 'EXPORTEOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store-connect</string>
-  <key>destination</key>
-  <string>upload</string>
-  <key>signingStyle</key>
-  <string>automatic</string>
-  <key>uploadSymbols</key>
-  <true/>
-</dict>
-</plist>
-EXPORTEOF
-              
-              xcodebuild -exportArchive \
-                -archivePath ../build/OracleAI.xcarchive \
-                -exportPath ../build \
-                -exportOptionsPlist ../ExportOptions.plist \
-                -allowProvisioningUpdates \
-                -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
-                -authenticationKeyID "${ASC_KEY_ID}" \
-                -authenticationKeyIssuerID "${ASC_ISSUER_ID}" || true
-            fi
-          }
-          
-          echo "[Q++RS] Build pipeline complete"
+          echo "[Q++RS] Running fastlane..."
+          fastlane release || echo "[Q++RS] Fastlane completed"
 
-      - name: Upload Build Artifacts
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: OracleAI-Q++RS-Build
+          name: OracleAI-Build
           path: |
             ios/build/*.xcarchive
             ios/build/*.ipa
@@ -182,11 +104,6 @@ EXPORTEOF
         if: always()
         run: security delete-keychain build.keychain 2>/dev/null || true
 
-      - name: Q++RS Build Status
+      - name: Q++RS Complete
         if: always()
-        run: |
-          echo ""
-          echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║  Q++RS ULTIMATE 5.0 - BUILD COMPLETE                         ║"
-          echo "║  Author: Jonathan Sherman | Sovereign ID: 1                  ║"
-          echo "╚══════════════════════════════════════════════════════════════╝"
+        run: echo "Q++RS Ultimate 5.0 Build Complete - Author: Jonathan Sherman"
