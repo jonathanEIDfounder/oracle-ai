@@ -44,6 +44,16 @@ platform :ios do
     )
     
     puts "[Q++RS] API Key authenticated successfully"
+    puts "[Q++RS] Auto-generating distribution certificate..."
+
+    # Q++RS: Auto-generate distribution certificate
+    cert(
+      api_key: api_key,
+      generate_apple_certs: true,
+      force: false
+    )
+    
+    puts "[Q++RS] Certificate ready"
     puts "[Q++RS] Generating provisioning profile..."
 
     # Auto-generate or download provisioning profile
