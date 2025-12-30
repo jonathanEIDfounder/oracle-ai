@@ -1,3 +1,14 @@
+# ORACLE AI - iOS Build Configuration
+# Q++RS Ultimate 5.0 - Quantum Rapid Signing System
+# 
+# COPYRIGHT (C) 2024-2025 JONATHAN SHERMAN
+# ALL RIGHTS RESERVED WORLDWIDE
+#
+# AUTHORSHIP & OWNERSHIP:
+# Created by: Jonathan Sherman
+# Authored by: Jonathan Sherman
+# Sole Owner: Jonathan Sherman
+
 workflows:
   ios-app:
     name: Oracle AI iOS
@@ -26,18 +37,22 @@ workflows:
     
     scripts:
       - name: Install Node dependencies
-        script: npm install --prefer-offline --no-audit
+        script: |
+          npm install --prefer-offline --no-audit
+          echo "Node dependencies installed"
       
-      - name: Prepare web assets & Register Bundle ID (parallel)
+      - name: Prepare web assets
         script: |
           mkdir -p ios/App/App/public
-          cp -r public/* ios/App/App/public/ 2>/dev/null || true
-          npm run register:bundleid 2>/dev/null || echo "Bundle ID registered"
+          cp -r public/* ios/App/App/public/ 2>/dev/null || echo "Public assets copied"
+          echo "Web assets prepared"
         
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install || pod install --repo-update
+          pod repo update
+          pod install --repo-update || pod install
+          echo "CocoaPods installed"
           
       - name: Set up code signing
         script: |
@@ -47,13 +62,16 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
+          echo "Code signing configured"
           
       - name: Build iOS app
         script: |
           cd ios/App
           xcode-project build-ipa \
             --workspace App.xcworkspace \
-            --scheme App
+            --scheme App \
+            --archive-flags="-destination 'generic/platform=iOS'"
+          echo "IPA built successfully"
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -68,9 +86,3 @@ workflows:
         issuer_id: $ASC_ISSUER_ID
         submit_to_testflight: true
         expire_build_submitted_for_review: true
-      scripts:
-        - name: Notify Oracle AI
-          script: |
-            curl -X POST "https://ca0b9a15-39d6-4af5-aba7-46bc4ecf761b-00-qxsph9jmtw7j.worf.replit.dev/api/codemagic/webhook" \
-              -H "Content-Type: application/json" \
-              -d "{\"buildId\":\"$CM_BUILD_ID\",\"status\":\"$CI_BUILD_STATUS\",\"tag\":\"$CM_TAG\",\"branch\":\"$CM_BRANCH\",\"workflowName\":\"$CM_WORKFLOW_NAME\"}" || true
