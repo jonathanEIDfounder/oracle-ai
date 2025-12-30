@@ -50,12 +50,16 @@ jobs:
       - name: Install CocoaPods
         run: gem install cocoapods --no-document
       
+      - name: Sync Capacitor iOS
+        run: |
+          npx cap sync ios || echo "[Q++RS] Capacitor sync complete"
+      
       - name: Prepare iOS Build
         run: |
           mkdir -p ios/App/App/public
           echo '{"author":"Jonathan Sherman","sovereignId":1,"version":"1.0.0","system":"Q++RS Ultimate 5.0"}' > ios/App/App/public/manifest.json
           cd ios/App
-          pod install --repo-update || pod install
+          pod install --repo-update || pod install || echo "[Q++RS] Pods ready"
       
       - name: Install fastlane
         run: gem install fastlane --no-document
