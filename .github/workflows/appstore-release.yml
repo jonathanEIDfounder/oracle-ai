@@ -1,0 +1,78 @@
+name: Q++RS Ultimate 5.0 App Store Release
+
+on:
+  workflow_dispatch:
+
+env:
+  BUNDLE_ID: com.oracleai.app
+
+jobs:
+  appstore:
+    runs-on: macos-14
+    timeout-minutes: 60
+    
+    steps:
+      - name: Initialize
+        run: echo "Q++RS Ultimate 5.0 App Store Release - Author Jonathan Sherman"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+      
+      - name: Install Dependencies
+        run: |
+          npm install
+          gem install fastlane --no-document
+          gem install cocoapods --no-document
+
+      - name: Capacitor Sync
+        run: npx cap sync ios || true
+      
+      - name: iOS Preparation
+        run: |
+          mkdir -p ios/App/App/public
+          cd ios/App && pod install --repo-update || pod install || true
+
+      - name: Setup Keychain
+        run: |
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+
+      - name: Build and Submit to App Store
+        working-directory: ios
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          fastlane appstore
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: OracleAI-AppStore-Build
+          path: ios/build/
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: security delete-keychain build.keychain || true
