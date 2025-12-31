@@ -57,10 +57,11 @@ jobs:
         run: |
           mkdir -p ~/.private_keys
           KEY_FILE=~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
-          echo "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_FILE"
           chmod 600 "$KEY_FILE"
+          echo "[Q++RS] Key lines: $(wc -l < "$KEY_FILE")"
+          openssl ec -in "$KEY_FILE" -noout 2>&1 && echo "[Q++RS] Key valid" || echo "[Q++RS] Key check failed"
           echo "ASC_KEY_FILE=$KEY_FILE" >> $GITHUB_ENV
-          echo "[Q++RS] API Key file ready"
 
       - name: Build and Submit to App Store
         working-directory: ios
