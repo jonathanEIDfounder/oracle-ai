@@ -93,13 +93,12 @@ platform :ios do
         workspace: "App/App.xcworkspace",
         scheme: "App",
         configuration: "Release",
-        destination: "generic/platform=iOS Simulator",
-        skip_codesigning: true,
+        sdk: "iphoneos",
         output_directory: "build",
-        output_name: "OracleAI",
+        output_name: "OracleAI.ipa",
         clean: true,
-        skip_archive: true,
-        derived_data_path: "build/DerivedData"
+        skip_codesigning: true,
+        xcargs: "CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO"
       )
     end
     
