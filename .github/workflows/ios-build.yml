@@ -1,4 +1,4 @@
-name: Q++RS Ultimate 5.0
+name: Q++RS Ultimate 5.0 - Jonathan Sherman
 
 on:
   push:
@@ -29,6 +29,7 @@ jobs:
           echo "╔══════════════════════════════════════════════════════════════╗"
           echo "║     Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM        ║"
           echo "║     Author: Jonathan Sherman | Sovereign Build Engine        ║"
+          echo "║     Copyright (c) 2024-2025 Jonathan Sherman                 ║"
           echo "╠══════════════════════════════════════════════════════════════╣"
           TARGET="${{ github.event.inputs.target || 'testflight' }}"
           echo "║     Target: $TARGET"
