@@ -65,9 +65,6 @@ jobs:
           cd ios/App && pod install --repo-update || pod install || true
 
       - name: Sovereign Keychain Setup
-        env:
-          SOVEREIGN_DEVICE_ID: ${{ secrets.SOVEREIGN_DEVICE_ID }}
-          SOVEREIGN_DEVICE_HASH: ${{ secrets.SOVEREIGN_DEVICE_HASH }}
         run: |
           echo "[Q++RS] Sovereign Keychain - Jonathan Sherman"
           
@@ -75,9 +72,8 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 7200 -l -u build.keychain
-          
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 7200 -u build.keychain
+          security list-keychains -s build.keychain login.keychain-db
           
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> $GITHUB_ENV
           echo "[Q++RS] ✓ Sovereign Keychain initialized"
