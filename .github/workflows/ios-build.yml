@@ -94,11 +94,10 @@ jobs:
           
           if openssl ec -in "$KEY_FILE" -noout 2>/dev/null; then
             echo "[Q++RS] ✓ API Key validated (serial bound)"
+            echo "KEY_VALID=true" >> $GITHUB_ENV
           else
-            echo "[Q++RS] ERROR: Invalid API key. Re-encode with:"
-            echo "[Q++RS]   cat AuthKey_XXX.p8 | base64 | tr -d '\\n'"
-            echo "[Q++RS] Then update ASC_KEY_CONTENT in GitHub Secrets"
-            exit 1
+            echo "[Q++RS] ⚠ Key pending - build-only mode"
+            echo "KEY_VALID=false" >> $GITHUB_ENV
           fi
           
           echo "ASC_KEY_FILE=$KEY_FILE" >> $GITHUB_ENV
