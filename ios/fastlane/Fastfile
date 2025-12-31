@@ -79,7 +79,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team_id} CODE_SIGN_STYLE=Automatic",
+      xcargs: "DEVELOPMENT_TEAM='#{team_id}' CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
@@ -149,7 +149,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team_id} CODE_SIGN_STYLE=Automatic -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      xcargs: "DEVELOPMENT_TEAM='#{team_id}' CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
