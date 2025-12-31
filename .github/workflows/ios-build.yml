@@ -1,10 +1,19 @@
-name: Q++RS Ultimate 5.0 TestFlight
+name: Q++RS Ultimate 5.0
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build Target'
+        required: true
+        default: 'testflight'
+        type: choice
+        options:
+          - testflight
+          - appstore
 
 env:
   BUNDLE_ID: com.oracleai.app
@@ -12,11 +21,18 @@ env:
 jobs:
   build:
     runs-on: macos-14
-    timeout-minutes: 45
+    timeout-minutes: 60
     
     steps:
-      - name: Initialize
-        run: echo "Q++RS Ultimate 5.0 - Author Jonathan Sherman"
+      - name: Q++RS Initialize
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║     Q++RS ULTIMATE 5.0 - QUANTUM RAPID SIGNING SYSTEM        ║"
+          echo "║     Author: Jonathan Sherman | Sovereign Build Engine        ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          TARGET="${{ github.event.inputs.target || 'testflight' }}"
+          echo "║     Target: $TARGET"
+          echo "╚══════════════════════════════════════════════════════════════╝"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,26 +69,51 @@ jobs:
           security unlock-keychain -p "" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
 
+      - name: Prepare API Key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/.private_keys
+          KEY_FILE=~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+          
+          echo "[Q++RS] Writing API key..."
+          printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          
+          echo "[Q++RS] Validating key format..."
+          if openssl ec -in "$KEY_FILE" -noout 2>/dev/null; then
+            echo "[Q++RS] ✓ Key validated successfully"
+          else
+            echo "[Q++RS] Key validation info:"
+            head -1 "$KEY_FILE"
+            tail -1 "$KEY_FILE"
+            wc -l < "$KEY_FILE"
+          fi
+          
+          echo "ASC_KEY_FILE=$KEY_FILE" >> $GITHUB_ENV
+
       - name: Build and Deploy
         working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          ASC_KEY_FILE: ${{ env.ASC_KEY_FILE }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          BUILD_TARGET: ${{ github.event.inputs.target || 'testflight' }}
         run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          fastlane release || echo "Fastlane completed"
+          echo "[Q++RS] Launching build: $BUILD_TARGET"
+          if [ "$BUILD_TARGET" = "appstore" ]; then
+            fastlane appstore
+          else
+            fastlane release
+          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: OracleAI-Build
+          name: OracleAI-${{ github.event.inputs.target || 'testflight' }}-${{ github.run_number }}
           path: ios/build/
           if-no-files-found: ignore
 
