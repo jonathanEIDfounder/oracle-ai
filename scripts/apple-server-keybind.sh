@@ -5,9 +5,31 @@
 # Author: Jonathan Sherman
 # Sovereign ID: 1
 # Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+# ACCESS: LOCKED TO JONATHAN SHERMAN ONLY
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -e
+
+SOVEREIGN_SERIAL_PREFIX="b9bc4457996a753e"
+AUTHORIZED_USER="Jonathan Sherman"
+
+verify_sovereign_access() {
+    local CURRENT_SERIAL=$(system_profiler SPHardwareDataType 2>/dev/null | grep 'Serial Number' | awk '{print $NF}')
+    local CURRENT_HASH=$(echo -n "${CURRENT_SERIAL}:ORACLE_AI_SOVEREIGN:1" | openssl dgst -sha256 | cut -d' ' -f2)
+    
+    if [[ "${CURRENT_HASH:0:16}" != "$SOVEREIGN_SERIAL_PREFIX" ]]; then
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║  ACCESS DENIED                                               ║"
+        echo "║  This script is locked to: $AUTHORIZED_USER                  ║"
+        echo "║  Sovereign ID: 1                                             ║"
+        echo "║  Your device is not authorized.                              ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        exit 1
+    fi
+    echo "[Q++RS] ✓ Sovereign access verified: $AUTHORIZED_USER"
+}
+
+verify_sovereign_access
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║     Q++RS ULTIMATE 5.0 - APPLE SERVER KEY BINDING            ║"
