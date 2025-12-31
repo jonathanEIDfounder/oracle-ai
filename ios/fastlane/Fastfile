@@ -27,28 +27,20 @@ platform :ios do
     puts ""
   end
 
-  desc "Q++RS Autonomous Build and TestFlight Upload"
+  desc "Q++RS Autonomous Build and TestFlight Upload - Author: Jonathan Sherman"
   lane :release do
     puts "[Q++RS] Initializing App Store Connect API..."
+    puts "[Q++RS] Author: #{AUTHOR} | Sovereign ID: #{SOVEREIGN_ID}"
     
-    key_content = ENV["ASC_KEY_CONTENT"]
-    key_path = File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    setup_ci
     
-    if File.exist?(key_path)
-      api_key = app_store_connect_api_key(
-        key_id: ENV["ASC_KEY_ID"],
-        issuer_id: ENV["ASC_ISSUER_ID"],
-        key_filepath: key_path
-      )
-    else
-      is_base64 = !key_content.to_s.include?("-----BEGIN")
-      api_key = app_store_connect_api_key(
-        key_id: ENV["ASC_KEY_ID"],
-        issuer_id: ENV["ASC_ISSUER_ID"],
-        key_content: key_content,
-        is_key_content_base64: is_base64
-      )
-    end
+    key_file = ENV["ASC_KEY_FILE"] || File.expand_path("~/.private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: key_file
+    )
     
     puts "[Q++RS] API Key authenticated"
 
@@ -69,7 +61,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
@@ -94,9 +86,10 @@ platform :ios do
     puts ""
   end
 
-  desc "Q++RS App Store Release - Submit to App Store Review"
+  desc "Q++RS App Store Release - Submit to App Store Review - Author: Jonathan Sherman"
   lane :appstore do
     puts "[Q++RS] Initializing App Store Release..."
+    puts "[Q++RS] Author: #{AUTHOR} | Sovereign ID: #{SOVEREIGN_ID}"
     
     setup_ci
     
@@ -129,7 +122,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
