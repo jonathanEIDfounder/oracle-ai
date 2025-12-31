@@ -89,17 +89,7 @@ platform :ios do
         }
       )
     else
-      gym(
-        workspace: "App/App.xcworkspace",
-        scheme: "App",
-        configuration: "Release",
-        sdk: "iphoneos",
-        output_directory: "build",
-        output_name: "OracleAI.ipa",
-        clean: true,
-        skip_codesigning: true,
-        xcargs: "CODE_SIGN_IDENTITY='' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO"
-      )
+      UI.user_error!("[Q++RS] SERIAL BOUND AUTOMATION REQUIRES VALID API KEY - Upload ASC_KEY_CONTENT_BASE64 to GitHub Secrets")
     end
     
     puts "[Q++RS] Build complete"
