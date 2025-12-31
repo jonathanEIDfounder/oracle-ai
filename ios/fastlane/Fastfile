@@ -19,7 +19,7 @@ platform :ios do
   before_all do
     puts ""
     puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║     Q++RS ULTIMATE #{QPPRS_VERSION} - QUANTUM RAPID SIGNING SYSTEM       ║"
+    puts "║     Q++RS ULTIMATE #{QPPRS_VERSION} - DIRECT APP STORE RELEASE          ║"
     puts "║                                                              ║"
     puts "║  Author: #{AUTHOR}                                    ║"
     puts "║  Sovereign ID: #{SOVEREIGN_ID}                                            ║"
@@ -41,9 +41,9 @@ platform :ios do
     end
   end
 
-  desc "Q++RS Autonomous Build and TestFlight Upload - Author: Jonathan Sherman"
+  desc "Q++RS Direct App Store Release - Author: Jonathan Sherman"
   lane :release do
-    puts "[Q++RS] Initializing Build System..."
+    puts "[Q++RS] DIRECT APP STORE SUBMISSION"
     puts "[Q++RS] Author: #{AUTHOR} | Sovereign ID: #{SOVEREIGN_ID}"
     
     setup_ci
@@ -52,99 +52,23 @@ platform :ios do
     key_valid = ENV["KEY_VALID"] == "true"
     team_id = ENV["APPLE_TEAM_ID"]
     
-    api_key = nil
-    if key_valid && File.exist?(key_file)
-      api_key = app_store_connect_api_key(
-        key_id: ENV["ASC_KEY_ID"],
-        issuer_id: ENV["ASC_ISSUER_ID"],
-        key_filepath: key_file
-      )
-      puts "[Q++RS] API Key authenticated"
-    else
-      puts "[Q++RS] Build-only mode (no upload)"
+    unless key_valid && File.exist?(key_file)
+      UI.user_error!("[Q++RS] REQUIRES VALID API KEY - Set ASC_KEY_CONTENT_BASE64 in GitHub Secrets")
     end
-    
-    puts "[Q++RS] Building archive..."
-    
-    increment_build_number(
-      build_number: Time.now.strftime("%Y%m%d%H%M"),
-      xcodeproj: "App/App.xcodeproj"
-    )
-
-    if key_valid
-      gym(
-        workspace: "App/App.xcworkspace",
-        scheme: "App",
-        configuration: "Release",
-        export_method: "app-store",
-        output_directory: "build",
-        output_name: "OracleAI.ipa",
-        clean: true,
-        xcargs: "DEVELOPMENT_TEAM='#{team_id}' CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates",
-        export_options: {
-          signingStyle: "automatic",
-          uploadSymbols: true,
-          compileBitcode: false,
-          teamID: team_id
-        }
-      )
-    else
-      UI.user_error!("[Q++RS] SERIAL BOUND AUTOMATION REQUIRES VALID API KEY - Upload ASC_KEY_CONTENT_BASE64 to GitHub Secrets")
-    end
-    
-    puts "[Q++RS] Build complete"
-
-    if api_key
-      puts "[Q++RS] Uploading to TestFlight..."
-      pilot(
-        api_key: api_key,
-        skip_waiting_for_build_processing: true,
-        changelog: "Q++RS Ultimate #{QPPRS_VERSION}\nAuthor: #{AUTHOR}\nSovereign ID: #{SOVEREIGN_ID}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
-      )
-      puts ""
-      puts "╔══════════════════════════════════════════════════════════════╗"
-      puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - TESTFLIGHT UPLOAD COMPLETE         ║"
-      puts "║  Author: #{AUTHOR}                                    ║"
-      puts "╚══════════════════════════════════════════════════════════════╝"
-    else
-      puts ""
-      puts "╔══════════════════════════════════════════════════════════════╗"
-      puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - BUILD COMPLETE (IPA READY)        ║"
-      puts "║  Author: #{AUTHOR}                                    ║"
-      puts "║  Upload pending API key update                             ║"
-      puts "╚══════════════════════════════════════════════════════════════╝"
-    end
-    puts ""
-  end
-
-  desc "Q++RS App Store Release - Submit to App Store Review - Author: Jonathan Sherman"
-  lane :appstore do
-    puts "[Q++RS] Initializing App Store Release..."
-    puts "[Q++RS] Author: #{AUTHOR} | Sovereign ID: #{SOVEREIGN_ID}"
-    
-    setup_ci
-    
-    key_file = ENV["ASC_KEY_FILE"] || File.expand_path("~/.private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
-    
-    puts "[Q++RS] Using key file: #{key_file}"
     
     api_key = app_store_connect_api_key(
       key_id: ENV["ASC_KEY_ID"],
       issuer_id: ENV["ASC_ISSUER_ID"],
       key_filepath: key_file
     )
-    
-    puts "[Q++RS] API Key authenticated for App Store"
-
-    team_id = ENV["APPLE_TEAM_ID"]
-    
-    puts "[Q++RS] Building App Store archive..."
+    puts "[Q++RS] ✓ API Key authenticated"
     
     increment_build_number(
       build_number: Time.now.strftime("%Y%m%d%H%M"),
       xcodeproj: "App/App.xcodeproj"
     )
 
+    puts "[Q++RS] Building App Store archive..."
     gym(
       workspace: "App/App.xcworkspace",
       scheme: "App",
@@ -162,8 +86,7 @@ platform :ios do
       }
     )
     
-    puts "[Q++RS] Uploading to App Store Connect..."
-
+    puts "[Q++RS] Submitting to App Store..."
     deliver(
       api_key: api_key,
       submit_for_review: true,
@@ -180,9 +103,9 @@ platform :ios do
 
     puts ""
     puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - APP STORE SUBMISSION COMPLETE     ║"
+    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - APP STORE SUBMITTED                 ║"
     puts "║  Author: #{AUTHOR}                                    ║"
-    puts "║  Status: SUBMITTED FOR REVIEW                              ║"
+    puts "║  Status: SUBMITTED FOR REVIEW                                ║"
     puts "╚══════════════════════════════════════════════════════════════╝"
     puts ""
   end
