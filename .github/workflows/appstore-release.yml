@@ -61,8 +61,14 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          echo "$ASC_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          if echo "$ASC_KEY_CONTENT" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_PATH"
+          else
+            echo "$ASC_KEY_CONTENT" | base64 -d > "$KEY_PATH"
+          fi
+          chmod 600 "$KEY_PATH"
+          echo "[Q++RS] API Key prepared at $KEY_PATH"
           fastlane appstore
 
       - name: Upload Artifacts
