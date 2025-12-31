@@ -63,24 +63,11 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
           
-          # Write key with proper newline handling
-          printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_PATH"
+          # Handle various key formats
+          echo "$ASC_KEY_CONTENT" | sed 's/\\n/\n/g' > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
           
-          # Diagnostics
-          echo "[Q++RS] Key file info:"
-          echo "Lines: $(wc -l < "$KEY_PATH")"
-          echo "First line: $(head -1 "$KEY_PATH")"
-          echo "Last line: $(tail -1 "$KEY_PATH")"
-          
-          # Validate key format
-          if openssl ec -in "$KEY_PATH" -noout 2>/dev/null; then
-            echo "[Q++RS] Key validation: PASSED"
-          else
-            echo "[Q++RS] Key validation: FAILED - checking format..."
-            file "$KEY_PATH"
-            hexdump -C "$KEY_PATH" | head -3
-          fi
+          echo "[Q++RS] Key lines: $(wc -l < "$KEY_PATH")"
           
           fastlane appstore
 
