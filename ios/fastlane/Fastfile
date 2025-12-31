@@ -94,6 +94,82 @@ platform :ios do
     puts ""
   end
 
+  desc "Q++RS App Store Release - Submit to App Store Review"
+  lane :appstore do
+    puts "[Q++RS] Initializing App Store Release..."
+    
+    key_content = ENV["ASC_KEY_CONTENT"]
+    key_path = File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    
+    if File.exist?(key_path)
+      api_key = app_store_connect_api_key(
+        key_id: ENV["ASC_KEY_ID"],
+        issuer_id: ENV["ASC_ISSUER_ID"],
+        key_filepath: key_path
+      )
+    else
+      is_base64 = !key_content.to_s.include?("-----BEGIN")
+      api_key = app_store_connect_api_key(
+        key_id: ENV["ASC_KEY_ID"],
+        issuer_id: ENV["ASC_ISSUER_ID"],
+        key_content: key_content,
+        is_key_content_base64: is_base64
+      )
+    end
+    
+    puts "[Q++RS] API Key authenticated for App Store"
+
+    team_id = ENV["APPLE_TEAM_ID"]
+    
+    puts "[Q++RS] Building App Store archive..."
+    
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M"),
+      xcodeproj: "App/App.xcodeproj"
+    )
+
+    gym(
+      workspace: "App/App.xcworkspace",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "OracleAI.ipa",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_path}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      export_options: {
+        signingStyle: "automatic",
+        uploadSymbols: true,
+        compileBitcode: false,
+        teamID: team_id
+      }
+    )
+    
+    puts "[Q++RS] Uploading to App Store Connect..."
+
+    deliver(
+      api_key: api_key,
+      submit_for_review: true,
+      automatic_release: true,
+      force: true,
+      skip_screenshots: true,
+      skip_metadata: false,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false
+      }
+    )
+
+    puts ""
+    puts "╔══════════════════════════════════════════════════════════════╗"
+    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - APP STORE SUBMISSION COMPLETE     ║"
+    puts "║  Author: #{AUTHOR}                                    ║"
+    puts "║  Status: SUBMITTED FOR REVIEW                              ║"
+    puts "╚══════════════════════════════════════════════════════════════╝"
+    puts ""
+  end
+
   error do |lane, exception|
     puts ""
     puts "╔══════════════════════════════════════════════════════════════╗"
