@@ -62,6 +62,7 @@ jobs:
       - name: iOS Preparation
         run: |
           mkdir -p ios/App/App/public
+          rm -rf ~/Library/Developer/Xcode/DerivedData
           cd ios/App && pod install --repo-update || pod install || true
 
       - name: Sovereign Keychain Setup
