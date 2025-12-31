@@ -62,10 +62,26 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          echo "$ASC_KEY_CONTENT" > "$KEY_PATH"
+          
+          # Write key with proper newline handling
+          printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
-          echo "[Q++RS] API Key prepared"
-          cat "$KEY_PATH" | head -1
+          
+          # Diagnostics
+          echo "[Q++RS] Key file info:"
+          echo "Lines: $(wc -l < "$KEY_PATH")"
+          echo "First line: $(head -1 "$KEY_PATH")"
+          echo "Last line: $(tail -1 "$KEY_PATH")"
+          
+          # Validate key format
+          if openssl ec -in "$KEY_PATH" -noout 2>/dev/null; then
+            echo "[Q++RS] Key validation: PASSED"
+          else
+            echo "[Q++RS] Key validation: FAILED - checking format..."
+            file "$KEY_PATH"
+            hexdump -C "$KEY_PATH" | head -3
+          fi
+          
           fastlane appstore
 
       - name: Upload Artifacts
