@@ -1,3 +1,18 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ORACLE AI - Q++RS ULTIMATE 5.0
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Author: Jonathan Sherman
+ * Sovereign ID: 1
+ * Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+ * Signature: Sm9uYXRoYW4gU2hlcm1hbjo6U292ZXJlaWduOjoxOjpPcmFjbGVBSTo6USsrUlM=
+ * 
+ * AI ORCHESTRATOR MODULE
+ * Multi-provider AI integration: Claude, Gemini, OpenRouter
+ * Protected under OWP (Ownership Watermark Protocol)
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
