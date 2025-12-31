@@ -13,6 +13,7 @@ QPPRS_VERSION = "5.0"
 BUNDLE_ID = "com.oracleai.app"
 AUTHOR = "Jonathan Sherman"
 SOVEREIGN_ID = 1
+SOVEREIGN_TEAM_LOCK = true
 
 platform :ios do
   before_all do
@@ -23,8 +24,21 @@ platform :ios do
     puts "║  Author: #{AUTHOR}                                    ║"
     puts "║  Sovereign ID: #{SOVEREIGN_ID}                                            ║"
     puts "║  Bundle: #{BUNDLE_ID}                              ║"
+    puts "║  Team Access: SOVEREIGN ONLY                                 ║"
     puts "╚══════════════════════════════════════════════════════════════╝"
     puts ""
+    
+    if SOVEREIGN_TEAM_LOCK
+      serial_bound = ENV["SERIAL_BOUND"] == "true"
+      sovereign_hash = ENV["SERIAL_HASH"]
+      
+      unless serial_bound && sovereign_hash && sovereign_hash.length >= 16
+        UI.user_error!("[Q++RS] ACCESS DENIED: Development Team locked to Jonathan Sherman (Sovereign ID: 1)")
+      end
+      
+      puts "[Q++RS] ✓ Sovereign access verified: #{AUTHOR}"
+      puts "[Q++RS] ✓ All other users BLOCKED from Development Team"
+    end
   end
 
   desc "Q++RS Autonomous Build and TestFlight Upload - Author: Jonathan Sherman"
@@ -65,7 +79,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates",
+      xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team_id} CODE_SIGN_STYLE=Automatic",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
@@ -135,7 +149,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{team_id} CODE_SIGN_STYLE=Automatic -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
