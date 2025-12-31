@@ -110,10 +110,11 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_FILE: ${{ env.ASC_KEY_FILE }}
+          KEY_VALID: ${{ env.KEY_VALID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUILD_TARGET: ${{ github.event.inputs.target || 'testflight' }}
         run: |
-          echo "[Q++RS] Launching build: $BUILD_TARGET"
+          echo "[Q++RS] Launching build: $BUILD_TARGET (key_valid=$KEY_VALID)"
           if [ "$BUILD_TARGET" = "appstore" ]; then
             fastlane appstore
           else
