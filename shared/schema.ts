@@ -1,11 +1,16 @@
 /**
- * ORACLE AI - Database Schema
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ORACLE AI - Q++RS ULTIMATE 5.0
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Author: Jonathan Sherman
+ * Sovereign ID: 1
+ * Copyright (c) 2024-2025 Jonathan Sherman. All Rights Reserved.
+ * Signature: Sm9uYXRoYW4gU2hlcm1hbjo6U292ZXJlaWduOjoxOjpPcmFjbGVBSTo6USsrUlM=
  * 
- * COPYRIGHT (C) 2024-2025 JONATHAN SHERMAN
- * ALL RIGHTS RESERVED WORLDWIDE
- * 
- * All database tables are under OWP protection.
- * Sovereign owner: Jonathan Sherman (ID: 1)
+ * DATABASE SCHEMA
+ * All tables under OWP protection
+ * Protected under OWP (Ownership Watermark Protocol)
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { pgTable, serial, integer, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
@@ -94,6 +99,40 @@ export const owpViolations = pgTable("owp_violations", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+export const keywordRules = pgTable("keyword_rules", {
+  id: serial("id").primaryKey(),
+  keyword: text("keyword").notNull().unique(),
+  isLocked: boolean("is_locked").notNull().default(false),
+  lockReason: text("lock_reason"),
+  action: text("action").notNull().default("block"),
+  severity: text("severity").notNull().default("warning"),
+  matchType: text("match_type").notNull().default("exact"),
+  caseSensitive: boolean("case_sensitive").notNull().default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const accessControl = pgTable("access_control", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  endpoint: text("endpoint").notNull(),
+  allowed: boolean("allowed").notNull().default(true),
+  requiresAdmin: boolean("requires_admin").notNull().default(false),
+  requiresSovereign: boolean("requires_sovereign").notNull().default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const platformLockdown = pgTable("platform_lockdown", {
+  id: serial("id").primaryKey(),
+  isActive: boolean("is_active").notNull().default(false),
+  allowedIpAddresses: text("allowed_ip_addresses"),
+  allowedDevices: text("allowed_devices"),
+  restrictedPaths: text("restricted_paths"),
+  maintenanceMode: boolean("maintenance_mode").notNull().default(false),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
@@ -102,6 +141,9 @@ export const insertAiConfigSchema = createInsertSchema(aiConfigs).omit({ id: tru
 export const insertAccessKeySchema = createInsertSchema(accessKeys).omit({ id: true, createdAt: true });
 export const insertSovereignDeviceSchema = createInsertSchema(sovereignDevices).omit({ id: true, createdAt: true });
 export const insertOwpViolationSchema = createInsertSchema(owpViolations).omit({ id: true, createdAt: true });
+export const insertKeywordRuleSchema = createInsertSchema(keywordRules).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAccessControlSchema = createInsertSchema(accessControl).omit({ id: true, createdAt: true });
+export const insertPlatformLockdownSchema = createInsertSchema(platformLockdown).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -119,3 +161,5 @@ export type SovereignDevice = typeof sovereignDevices.$inferSelect;
 export type InsertSovereignDevice = z.infer<typeof insertSovereignDeviceSchema>;
 export type OwpViolation = typeof owpViolations.$inferSelect;
 export type InsertOwpViolation = z.infer<typeof insertOwpViolationSchema>;
+export type KeywordRule = typeof keywordRules.$inferSelect;
+export type InsertKeywordRule = z.infer<typeof insertKeywordRuleSchema>;
