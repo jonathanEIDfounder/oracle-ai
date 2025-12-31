@@ -86,26 +86,23 @@ platform :ios do
       }
     )
     
-    puts "[Q++RS] Submitting to App Store..."
-    deliver(
+    puts "[Q++RS] Uploading to App Store Connect..."
+    upload_to_app_store(
       api_key: api_key,
-      submit_for_review: true,
-      automatic_release: true,
-      force: true,
       skip_screenshots: true,
-      skip_metadata: false,
-      precheck_include_in_app_purchases: false,
-      submission_information: {
-        add_id_info_uses_idfa: false,
-        export_compliance_uses_encryption: false
-      }
+      skip_metadata: true,
+      skip_app_version_update: false,
+      force: true,
+      run_precheck_before_submit: false,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
     )
 
     puts ""
     puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - APP STORE SUBMITTED                 ║"
+    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - UPLOADED TO APP STORE CONNECT       ║"
     puts "║  Author: #{AUTHOR}                                    ║"
-    puts "║  Status: SUBMITTED FOR REVIEW                                ║"
+    puts "║  Status: READY FOR MANUAL REVIEW SUBMISSION                  ║"
     puts "╚══════════════════════════════════════════════════════════════╝"
     puts ""
   end
