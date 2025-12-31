@@ -78,18 +78,35 @@ jobs:
           mkdir -p ~/.private_keys
           KEY_FILE=~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
           
-          echo "[Q++RS] Writing API key..."
-          printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          echo "[Q++RS] Processing API key..."
+          
+          # Check if content is base64 encoded (no BEGIN header)
+          if echo "$ASC_KEY_CONTENT" | grep -q "BEGIN PRIVATE KEY"; then
+            # Raw PEM format - write directly
+            echo "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          else
+            # Base64 encoded - decode first
+            echo "$ASC_KEY_CONTENT" | base64 -d > "$KEY_FILE" 2>/dev/null || echo "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          fi
+          
           chmod 600 "$KEY_FILE"
           
-          echo "[Q++RS] Validating key format..."
+          # Validate the key
           if openssl ec -in "$KEY_FILE" -noout 2>/dev/null; then
             echo "[Q++RS] ✓ Key validated successfully"
           else
-            echo "[Q++RS] Key validation info:"
-            head -1 "$KEY_FILE"
-            tail -1 "$KEY_FILE"
-            wc -l < "$KEY_FILE"
+            echo "[Q++RS] ⚠ Key validation failed - attempting repair..."
+            # Try to fix common issues (missing newlines)
+            cat "$KEY_FILE" | tr ' ' '\n' | grep -v "^$" > "${KEY_FILE}.tmp"
+            mv "${KEY_FILE}.tmp" "$KEY_FILE"
+            
+            if openssl ec -in "$KEY_FILE" -noout 2>/dev/null; then
+              echo "[Q++RS] ✓ Key repaired and validated"
+            else
+              echo "[Q++RS] ERROR: Key is invalid. Please update ASC_KEY_CONTENT secret."
+              echo "[Q++RS] Run locally: cat AuthKey_XXX.p8 | base64 | tr -d '\\n'"
+              echo "[Q++RS] Then paste the output as ASC_KEY_CONTENT in GitHub Secrets"
+            fi
           fi
           
           echo "ASC_KEY_FILE=$KEY_FILE" >> $GITHUB_ENV
