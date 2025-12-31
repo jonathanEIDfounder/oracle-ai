@@ -62,13 +62,10 @@ jobs:
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
           KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          if echo "$ASC_KEY_CONTENT" | grep -q "BEGIN PRIVATE KEY"; then
-            printf '%s\n' "$ASC_KEY_CONTENT" > "$KEY_PATH"
-          else
-            echo "$ASC_KEY_CONTENT" | base64 -d > "$KEY_PATH"
-          fi
+          echo "$ASC_KEY_CONTENT" > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
-          echo "[Q++RS] API Key prepared at $KEY_PATH"
+          echo "[Q++RS] API Key prepared"
+          cat "$KEY_PATH" | head -1
           fastlane appstore
 
       - name: Upload Artifacts
