@@ -50,26 +50,23 @@ jobs:
           security unlock-keychain -p "" build.keychain
           security set-keychain-settings -t 3600 -u build.keychain
 
+      - name: Prepare API Key
+        env:
+          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+        run: |
+          # Base64 encode the key for fastlane compatibility
+          echo "$ASC_KEY_CONTENT" | base64 > /tmp/asc_key_base64.txt
+          echo "ASC_KEY_CONTENT_BASE64=$(cat /tmp/asc_key_base64.txt | tr -d '\n')" >> $GITHUB_ENV
+          echo "[Q++RS] API Key prepared (base64 encoded)"
+
       - name: Build and Submit to App Store
         working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+          ASC_KEY_CONTENT_BASE64: ${{ env.ASC_KEY_CONTENT_BASE64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
-          
-          # Handle various key formats
-          echo "$ASC_KEY_CONTENT" | sed 's/\\n/\n/g' > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
-          
-          echo "[Q++RS] Key lines: $(wc -l < "$KEY_PATH")"
-          
-          fastlane appstore
+        run: fastlane appstore
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
