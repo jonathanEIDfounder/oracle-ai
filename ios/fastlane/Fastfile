@@ -29,22 +29,26 @@ platform :ios do
 
   desc "Q++RS Autonomous Build and TestFlight Upload - Author: Jonathan Sherman"
   lane :release do
-    puts "[Q++RS] Initializing App Store Connect API..."
+    puts "[Q++RS] Initializing Build System..."
     puts "[Q++RS] Author: #{AUTHOR} | Sovereign ID: #{SOVEREIGN_ID}"
     
     setup_ci
     
     key_file = ENV["ASC_KEY_FILE"] || File.expand_path("~/.private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
-    
-    api_key = app_store_connect_api_key(
-      key_id: ENV["ASC_KEY_ID"],
-      issuer_id: ENV["ASC_ISSUER_ID"],
-      key_filepath: key_file
-    )
-    
-    puts "[Q++RS] API Key authenticated"
-
+    key_valid = ENV["KEY_VALID"] == "true"
     team_id = ENV["APPLE_TEAM_ID"]
+    
+    api_key = nil
+    if key_valid && File.exist?(key_file)
+      api_key = app_store_connect_api_key(
+        key_id: ENV["ASC_KEY_ID"],
+        issuer_id: ENV["ASC_ISSUER_ID"],
+        key_filepath: key_file
+      )
+      puts "[Q++RS] API Key authenticated"
+    else
+      puts "[Q++RS] Build-only mode (no upload)"
+    end
     
     puts "[Q++RS] Building archive..."
     
@@ -61,7 +65,7 @@ platform :ios do
       output_directory: "build",
       output_name: "OracleAI.ipa",
       clean: true,
-      xcargs: "-allowProvisioningUpdates -authenticationKeyPath '#{key_file}' -authenticationKeyID '#{ENV['ASC_KEY_ID']}' -authenticationKeyIssuerID '#{ENV['ASC_ISSUER_ID']}'",
+      xcargs: "-allowProvisioningUpdates",
       export_options: {
         signingStyle: "automatic",
         uploadSymbols: true,
@@ -70,19 +74,28 @@ platform :ios do
       }
     )
     
-    puts "[Q++RS] Build complete, uploading to TestFlight..."
+    puts "[Q++RS] Build complete"
 
-    pilot(
-      api_key: api_key,
-      skip_waiting_for_build_processing: true,
-      changelog: "Q++RS Ultimate #{QPPRS_VERSION}\nAuthor: #{AUTHOR}\nSovereign ID: #{SOVEREIGN_ID}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
-    )
-
-    puts ""
-    puts "╔══════════════════════════════════════════════════════════════╗"
-    puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - TESTFLIGHT UPLOAD COMPLETE         ║"
-    puts "║  Author: #{AUTHOR}                                    ║"
-    puts "╚══════════════════════════════════════════════════════════════╝"
+    if api_key
+      puts "[Q++RS] Uploading to TestFlight..."
+      pilot(
+        api_key: api_key,
+        skip_waiting_for_build_processing: true,
+        changelog: "Q++RS Ultimate #{QPPRS_VERSION}\nAuthor: #{AUTHOR}\nSovereign ID: #{SOVEREIGN_ID}\nDate: #{Time.now.strftime('%Y-%m-%d %H:%M UTC')}"
+      )
+      puts ""
+      puts "╔══════════════════════════════════════════════════════════════╗"
+      puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - TESTFLIGHT UPLOAD COMPLETE         ║"
+      puts "║  Author: #{AUTHOR}                                    ║"
+      puts "╚══════════════════════════════════════════════════════════════╝"
+    else
+      puts ""
+      puts "╔══════════════════════════════════════════════════════════════╗"
+      puts "║  Q++RS ULTIMATE #{QPPRS_VERSION} - BUILD COMPLETE (IPA READY)        ║"
+      puts "║  Author: #{AUTHOR}                                    ║"
+      puts "║  Upload pending API key update                             ║"
+      puts "╚══════════════════════════════════════════════════════════════╝"
+    end
     puts ""
   end
 
