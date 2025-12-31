@@ -73,8 +73,8 @@ echo "[Q++RS] Serial binding: ${SERIAL_HASH:0:16}..."
 if command -v gh &> /dev/null; then
     echo "[Q++RS] Updating GitHub secrets..."
     
-    echo "$KEY_BASE64" | gh secret set ASC_KEY_CONTENT -R "$REPO"
-    echo "[Q++RS] ✓ ASC_KEY_CONTENT updated"
+    echo "$KEY_BASE64" | gh secret set ASC_KEY_CONTENT_BASE64 -R "$REPO"
+    echo "[Q++RS] ✓ ASC_KEY_CONTENT_BASE64 updated"
     
     echo "$KEY_ID" | gh secret set ASC_KEY_ID -R "$REPO"
     echo "[Q++RS] ✓ ASC_KEY_ID updated"
@@ -98,7 +98,7 @@ else
     echo ""
     echo "1. Go to: https://github.com/$REPO/settings/secrets/actions"
     echo ""
-    echo "2. Update ASC_KEY_CONTENT with:"
+    echo "2. Update ASC_KEY_CONTENT_BASE64 with:"
     echo "$KEY_BASE64"
     echo ""
     echo "3. Update ASC_KEY_ID with:"
