@@ -52,19 +52,22 @@ jobs:
 
       - name: Prepare API Key
         env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
         run: |
-          # Base64 encode the key for fastlane compatibility
-          echo "$ASC_KEY_CONTENT" | base64 > /tmp/asc_key_base64.txt
-          echo "ASC_KEY_CONTENT_BASE64=$(cat /tmp/asc_key_base64.txt | tr -d '\n')" >> $GITHUB_ENV
-          echo "[Q++RS] API Key prepared (base64 encoded)"
+          mkdir -p ~/.private_keys
+          KEY_FILE=~/.private_keys/AuthKey_${ASC_KEY_ID}.p8
+          echo "$ASC_KEY_CONTENT" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          echo "ASC_KEY_FILE=$KEY_FILE" >> $GITHUB_ENV
+          echo "[Q++RS] API Key file ready"
 
       - name: Build and Submit to App Store
         working-directory: ios
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_CONTENT_BASE64: ${{ env.ASC_KEY_CONTENT_BASE64 }}
+          ASC_KEY_FILE: ${{ env.ASC_KEY_FILE }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: fastlane appstore
 
