@@ -1,0 +1,32 @@
+name: deploy-to-all
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+
+permissions:
+  contents: write
+  workflows: write
+
+jobs:
+  deploy-to-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Create deployment marker (tests write)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          echo "deployed-by: deploy-to-all" > deployment_marker.txt
+          echo "timestamp: $(date -u)" >> deployment_marker.txt
+          git add deployment_marker.txt
+          git commit -m "ci(deploy): add deployment marker [ci skip]" || echo "nothing to commit"
+          git push
+
+      - name: (Placeholder) Deploy steps
+        run: |
+          echo "Add your real deploy commands here"
