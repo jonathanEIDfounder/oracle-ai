@@ -1,0 +1,137 @@
+name: Oracle-AI
+# =============================================================
+# Oracle-AI — S1AF Sovereign Xcode Project
+# Author: Jonathan Sherman
+# Copyright: © 2026 Jonathan Sherman. All Rights Reserved.
+# Framework: S1AF v1.0.0-JS
+# Sovereign ID: 1 · OCSO-S1AF-GOV-1
+# =============================================================
+# Generate: bash AARTE-iOS-App/generate-xcode-project.sh
+
+options:
+  bundleIdPrefix: com.jonathansherman.s1af
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.4"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+  defaultConfig: Release
+
+settings:
+  SWIFT_VERSION: "6.0"
+  IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+  TARGETED_DEVICE_FAMILY: "1"           # iPhone only — never iPad
+  SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
+  SUPPORTS_MACCATALYST: "NO"
+  ENABLE_BITCODE: "NO"
+  DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+  ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: "YES"
+  SWIFT_STRICT_CONCURRENCY: complete
+  GCC_OPTIMIZATION_LEVEL: s
+  SWIFT_COMPILATION_MODE: wholemodule
+
+configs:
+  Debug:   debug
+  Release: release
+
+targets:
+
+  # ── Main App ────────────────────────────────────────────────
+  OracleAI:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai
+        PRODUCT_NAME: Oracle-AI
+        INFOPLIST_FILE: AARTE-iOS-App/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""              # set your Team ID here or in Xcode
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        ENABLE_PREVIEWS: "YES"
+
+    sources:
+      - path: Scripts/SiriDeploy/Sources
+        type: group
+      - path: AARTE-iOS-App/Sources
+        type: group
+
+    resources:
+      - path: artifacts/api-server/assets/QuantumAdaptive_AppIcon.png
+        optional: true
+
+    dependencies:
+      - target: OracleAIWidget
+
+    info:
+      path: AARTE-iOS-App/Info.plist
+      properties:
+        CFBundleName: Oracle-AI
+        CFBundleDisplayName: Oracle-AI
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        NSFaceIDUsageDescription: >
+          Oracle-AI requires Face ID to verify you are Jonathan Sherman
+          (Sovereign ID 1 — OCSO-S1AF-GOV-1). Unauthorized access is denied.
+        UILaunchScreen:
+          UIColorName: ""
+          UIImageName: ""
+        UIRequiredDeviceCapabilities:
+          - arm64
+          - face-id
+        UIDeviceFamily:
+          - 1
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: false
+
+  # ── Live Activity Widget ─────────────────────────────────────
+  OracleAIWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai.widget
+        PRODUCT_NAME: OracleAIWidget
+        INFOPLIST_FILE: AARTE-iOS-App/Widget-Info.plist
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+
+    sources:
+      - path: Scripts/SiriDeploy/LiveActivity
+        type: group
+
+    info:
+      path: AARTE-iOS-App/Widget-Info.plist
+      properties:
+        CFBundleName: OracleAIWidget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+schemes:
+  Oracle-AI:
+    build:
+      targets:
+        OracleAI: all
+        OracleAIWidget: all
+    run:
+      config: Debug
+      simulateLocation:
+        allow: false
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
