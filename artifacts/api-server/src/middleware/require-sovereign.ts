@@ -10,6 +10,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { CONFIG } from "../lib/config";
 import { getBootGeneration } from "../lib/boot-generation";
+import { getScore } from "../lib/behavioral-score-cache";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
@@ -67,6 +68,37 @@ export function requireSovereign(req: Request, res: Response, next: NextFunction
       return;
     }
     (req as unknown as Record<string, unknown>)["sovereign"] = payload;
+
+    // ── Behavioral score gate ──────────────────────────────────────────────
+    // The iOS client submits a HybridScore via POST /api/aarte/session-score
+    // after every quantum verification.  We enforce the cached decision here.
+    // If no entry exists (session hasn't run a behavioral check yet) we pass
+    // through — backward-compatible with tokens issued before AARTE.
+    const behavioralEntry = getScore(token);
+    if (behavioralEntry) {
+      if (behavioralEntry.decision === "UNAUTHORIZED") {
+        res.status(403).json({
+          ok:     false,
+          error:  "behavioral_unauthorized",
+          message: "Behavioral authentication failed. Re-enroll via Quantum tab.",
+          score:  behavioralEntry.hybridScore,
+        });
+        return;
+      }
+      if (behavioralEntry.decision === "REVIEW") {
+        res.status(401).json({
+          ok:      false,
+          error:   "behavioral_review",
+          message: "Behavioral anomaly detected. Re-authenticate via Face ID.",
+          challenge: "biometric_review",
+          score:   behavioralEntry.hybridScore,
+        });
+        return;
+      }
+      // AUTHORIZED — attach score metadata for downstream routes
+      (req as unknown as Record<string, unknown>)["behavioralScore"] = behavioralEntry;
+    }
+
     next();
   } catch (e) {
     const expired = e instanceof jwt.TokenExpiredError;
