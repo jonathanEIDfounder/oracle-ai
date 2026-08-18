@@ -60,9 +60,23 @@ targets:
         type: group
       - path: AARTE-iOS-App/Sources
         type: group
+      # AARTE Swift library — compiled directly into the app target.
+      # These same files are also a Swift Package target (Sources/AARTE)
+      # used for `swift test` on Linux; the two compilation contexts are
+      # independent (no duplicate-symbol risk).
+      - path: Sources/AARTE
+        type: group
+      # QuantumView SwiftUI tab — references AARTE types from the group above.
+      - path: AARTE-iOS-App/AARTE/Views
+        type: group
 
     resources:
       - path: artifacts/api-server/assets/QuantumAdaptive_AppIcon.png
+        optional: true
+      # BehavioralEncoder Core ML model bundle — compiled with `coremlc`.
+      # Run scripts/train-behavioral-encoder.py on macOS to produce it, then
+      # add the resulting BehavioralEncoder.mlmodelc here.
+      - path: AARTE-iOS-App/Resources/BehavioralEncoder.mlmodelc
         optional: true
 
     dependencies:
