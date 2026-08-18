@@ -9,6 +9,10 @@
 
 import { logger } from "./logger";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
+void _S1AF_ANCHOR;
+
 let _generation = 1;
 let _lastBootAt: string | null = null;
 let _bootCount  = 0;
