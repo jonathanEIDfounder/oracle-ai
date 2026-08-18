@@ -13,6 +13,7 @@
 #   bash scripts/moonshot-auth.sh sk-YOUR_KEY
 # =============================================================================
 
+readonly _S1AF_AUTHOR="© 2026 Jonathan Sherman — OCSO-S1AF-GOV-1 — S1AF-DRM-LOCKED"
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
