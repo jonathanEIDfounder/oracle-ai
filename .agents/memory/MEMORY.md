@@ -1,0 +1,8 @@
+- [Orval zod.int() fix](orval-zod-int-fix.md) — Orval generates zod.int() for nullable numbers but Zod v3 needs zod.number(); post-process after codegen.
+- [Sentient Retrieval](sentient-retrieval.md) — async startup step that pulls SENTIENT_* vars from oracle-ai and patches CONFIG secrets via getter-backed _live store before server binds.
+- [Apple App Store Connect JWT](apple-jwt-pattern.md) — JWT auth with ES256, 20min max TTL, cached in memory; private key newlines must be unescaped.
+- [HMAC deploy lock](hmac-deploy-lock.md) — canonical string uses req.originalUrl (not req.path); raw body must be captured before JSON.parse; shell script signs with openssl dgst -sha256 -hmac.
+- [Shell HMAC signing](shell-hmac-signing.md) — bash HMAC pattern for signed API calls; openssl newline handling; route-A/B fallback structure.
+- [Sentient Governance Baseline](sentient-baseline.md) — sentient_baseline table sealed on first boot; sentient_state table replaces /tmp snapshot with Postgres dual-write.
+- [Replit GitHub Integration Push](replit-github-integration-push.md) — proxyFetch on the GitHub connector pushes files when GITHUB_PAT is invalid; raw token not extractable.
+- [GitHub Connector Octokit Pattern](github-connector-octokit.md) — conn.getClient() returns Octokit; conn.proxyFetch() is a method not a global; both are CodeExecution-sandbox-only.
