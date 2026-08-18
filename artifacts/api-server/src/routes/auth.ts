@@ -21,6 +21,10 @@ import {
 import { CONFIG } from "../lib/config";
 import { logger } from "../lib/logger";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
+void _S1AF_ANCHOR;
+
 const router = Router();
 
 // ── POST /api/auth/challenge ──────────────────────────────────────────────────
