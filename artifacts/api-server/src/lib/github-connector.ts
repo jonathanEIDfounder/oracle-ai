@@ -75,3 +75,41 @@ export async function probeGitHubToken(): Promise<{ available: boolean; source?:
     return { available: false };
   }
 }
+
+/** Live-validate: resolves token then hits /user to confirm GitHub accepts it. */
+export async function validateGitHubToken(): Promise<{
+  valid: boolean;
+  source?: string;
+  login?: string;
+  scopes?: string[];
+  error?: string;
+}> {
+  let token: string, source: string;
+  try {
+    ({ token, source } = await resolveGitHubToken());
+  } catch (e: any) {
+    return { valid: false, error: e.message };
+  }
+  try {
+    const r = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.status === 200) {
+      const d    = await r.json() as any;
+      const scopeHeader = r.headers.get("x-oauth-scopes") ?? "";
+      const scopes = scopeHeader ? scopeHeader.split(",").map(s => s.trim()).filter(Boolean) : [];
+      return { valid: true, source, login: d.login, scopes };
+    }
+    const body = await r.text().catch(() => "");
+    // Token resolved but rejected by GitHub — evict cache so next call re-resolves
+    cache = null;
+    return { valid: false, source, error: `GitHub ${r.status}: ${body.slice(0, 80)}` };
+  } catch (e: any) {
+    return { valid: false, source, error: e.message };
+  }
+}
