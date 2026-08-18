@@ -12,6 +12,7 @@
 # =============================================================================
 set -uo pipefail
 
+readonly _S1AF_AUTHOR="© 2026 Jonathan Sherman — OCSO-S1AF-GOV-1 — S1AF-DRM-LOCKED"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API="http://localhost:8080/api"
 
