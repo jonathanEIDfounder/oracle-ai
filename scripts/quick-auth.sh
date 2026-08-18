@@ -10,6 +10,7 @@
 #   2. Prompts once for your Moonshot sk-... key (hidden)
 #   3. Seals both to AES-256 cipherstore immediately
 
+readonly _S1AF_AUTHOR="© 2026 Jonathan Sherman — OCSO-S1AF-GOV-1 — S1AF-DRM-LOCKED"
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 source scripts/pat-cipher.sh
