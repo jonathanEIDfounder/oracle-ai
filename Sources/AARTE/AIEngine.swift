@@ -205,11 +205,13 @@ public final class AIEngine: @unchecked Sendable {
 
 #if canImport(CoreML)
     if let model = mlModel, let out = runCoreML(model: model, input: raw) {
+      logInferencePath("Neural Engine (BehavioralEncoder.mlmodelc)")
       return BehavioralEmbedding(vector: out,
                                  deviceId: deviceIdentifier())
     }
 #endif
     // Heuristic fallback (deterministic, no model required)
+    logInferencePath("Heuristic (no model bundle — run scripts/train-behavioral-encoder.py)")
     return BehavioralEmbedding(vector: heuristicEmbed(raw),
                                deviceId: deviceIdentifier())
   }
@@ -268,6 +270,14 @@ public final class AIEngine: @unchecked Sendable {
       out[i] = acc / Float(n)
     }
     return out
+  }
+
+  // Log the active inference path once per session.
+  private var _didLogPath = false
+  private func logInferencePath(_ path: String) {
+    guard !_didLogPath else { return }
+    _didLogPath = true
+    print("[AARTE] Inference path: \(path)")
   }
 
   private func deviceIdentifier() -> String {
