@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Info.plist — Oracle-AI
+  © 2026 Jonathan Sherman — OCSO-S1AF-GOV-1
+-->
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Oracle-AI</string>
+    <key>CFBundleDisplayName</key>
+    <string>Oracle-AI</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.jonathansherman.s1af.oracle-ai</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Oracle-AI requires Face ID to verify you are Jonathan Sherman (Sovereign ID 1 — OCSO-S1AF-GOV-1). Unauthorized access is denied.</string>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+    </dict>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>arm64</string>
+        <string>face-id</string>
+    </array>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+    <key>NSSupportsLiveActivities</key>
+    <true/>
+</dict>
+</plist>
