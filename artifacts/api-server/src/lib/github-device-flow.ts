@@ -19,6 +19,10 @@ import { join }              from "path";
 import { logger }            from "./logger";
 import { patchSecrets, CONFIG } from "./config";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
+void _S1AF_ANCHOR;
+
 const execFileAsync = promisify(execFile);
 
 const GH_CLIENT_ID   = "178c6fc778ccc68e1d6a";  // gh CLI public OAuth app
