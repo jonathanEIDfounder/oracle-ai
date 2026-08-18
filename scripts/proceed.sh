@@ -229,7 +229,7 @@ info "Moonshot (Kimi) key:"
 _MS_KEY="$(s1af_decrypt_named moonshot-key 2>/dev/null || echo "")"
 if [[ "${#_MS_KEY}" -ge 20 && "$_MS_KEY" == sk-* ]]; then
   _MS_OK="$(curl -sf -H "Authorization: Bearer ${_MS_KEY}" \
-    https://api.moonshot.cn/v1/models 2>/dev/null | \
+    https://api.moonshot.ai/v1/models 2>/dev/null | \
     python3 -c "import json,sys; d=json.load(sys.stdin); print('ok' if d.get('data') else 'fail')" 2>/dev/null || echo "fail")"
   if [[ "$_MS_OK" == "ok" ]]; then
     ok "Valid Moonshot key"
