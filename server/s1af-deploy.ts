@@ -49,27 +49,72 @@ function ghHeaders(pat: string) {
 }
 
 // ── auth middleware ──────────────────────────────────────────
+// HMAC-SHA256 signed requests + legacy X-Deploy-Token fallback + rate limit.
+// Client sends: X-Deploy-Timestamp (unix seconds) + X-Deploy-Signature (hex HMAC).
+// Canonical string: `${ts}\n${METHOD}\n${path}\n${SHA256(rawBody)}`.
+// Replay window: ±300 s. Rate limit: 10 req/min per IP.
+
+import crypto from "crypto";
+
+const REPLAY_WIN_S = 300;
+const MAX_RATE     = 10;
+const RATE_WIN_MS  = 60_000;
+const rateBuckets  = new Map<string, { count: number; resetAt: number }>();
+setInterval(() => { const n = Date.now(); for (const [k,v] of rateBuckets) if (v.resetAt < n) rateBuckets.delete(k); }, 5*60_000);
+
+function checkRate(ip: string): boolean {
+  const now = Date.now();
+  let b = rateBuckets.get(ip);
+  if (!b || b.resetAt < now) { b = { count: 0, resetAt: now + RATE_WIN_MS }; rateBuckets.set(ip, b); }
+  return ++b.count <= MAX_RATE;
+}
+function hmacHex(secret: string, data: string): string {
+  return crypto.createHmac("sha256", secret).update(data).digest("hex");
+}
+function sha256hex(data: string): string {
+  return crypto.createHash("sha256").update(data).digest("hex");
+}
 
 function requireDeployToken(req: Request, res: Response, next: Function) {
   const secret = process.env.DEPLOY_SECRET;
   if (!secret || secret.length < 8) {
-    res.status(503).json({
-      error: "S1AF deploy endpoint not configured",
-      server: "oracle-ai",
-    });
+    res.status(503).json({ ok: false, error: "Deploy endpoint not configured", server: "oracle-ai" });
     return;
   }
 
+  const ip = ((req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "").split(",")[0].trim();
+  if (!checkRate(ip)) {
+    res.status(429).json({ ok: false, error: "Rate limit exceeded — 10 req/min", server: "oracle-ai" });
+    return;
+  }
+
+  // HMAC path (preferred — no secret over wire)
+  const tsHdr  = req.headers["x-deploy-timestamp"] as string | undefined;
+  const sigHdr = req.headers["x-deploy-signature"]  as string | undefined;
+  if (tsHdr && sigHdr) {
+    const ts  = parseInt(tsHdr, 10);
+    const now = Math.floor(Date.now() / 1000);
+    if (isNaN(ts) || Math.abs(now - ts) > REPLAY_WIN_S) {
+      res.status(401).json({ ok: false, error: "Request expired — clock skew > 5 min", server: "oracle-ai" });
+      return;
+    }
+    const raw     = (req as any).rawBody ?? JSON.stringify(req.body ?? "");
+    const canon   = `${ts}\n${req.method.toUpperCase()}\n${req.originalUrl.split("?")[0]}\n${sha256hex(raw)}`;
+    const expected = hmacHex(secret, canon);
+    if (!safeEqual(sigHdr.toLowerCase(), expected)) {
+      res.status(401).json({ ok: false, error: "Invalid HMAC signature", server: "oracle-ai" });
+      return;
+    }
+    next(); return;
+  }
+
+  // Legacy static-token fallback (for curl scripts)
   const provided =
     (req.headers["x-deploy-token"] as string | undefined) ??
     (req.headers["authorization"] ?? "").toString().replace(/^Bearer\s+/i, "");
+  if (provided && safeEqual(provided, secret)) { next(); return; }
 
-  if (!provided || !safeEqual(provided, secret)) {
-    res.status(401).json({ error: "Invalid deploy token", server: "oracle-ai" });
-    return;
-  }
-
-  next();
+  res.status(401).json({ ok: false, error: "Auth required — X-Deploy-Timestamp + X-Deploy-Signature", server: "oracle-ai" });
 }
 
 function resolvePAT(): string | null {
