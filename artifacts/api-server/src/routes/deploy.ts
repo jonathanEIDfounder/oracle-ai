@@ -18,7 +18,7 @@ function safeEqual(a: string, b: string): boolean {
 /** Middleware: reject any request that doesn't carry the deploy secret. */
 function requireDeployToken(req: Request, res: Response, next: Function) {
   const secret = process.env.DEPLOY_SECRET;
-  if (!secret || secret.length < 16) {
+  if (!secret || secret.length < 8) {
     // Secret not configured — lock down completely
     res.status(503).json({ error: "Deploy endpoint not configured" });
     return;
