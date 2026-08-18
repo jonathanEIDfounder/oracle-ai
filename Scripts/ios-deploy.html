@@ -103,15 +103,26 @@
     <p>oracle-ai · GitHub Actions · iOS</p>
   </header>
 
-  <!-- Server URL -->
+  <!-- Server URL + Deploy Token -->
   <div class="card">
     <label>Kimi API Server URL</label>
     <input type="url" id="serverUrl" placeholder="https://your-replit-dev-domain/api"
            autocorrect="off" autocapitalize="none" spellcheck="false"
            data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" />
-    <button class="small-btn" onclick="saveServer()">💾 Save URL</button>
+    <div style="margin-top:12px;">
+      <label>Deploy Token</label>
+      <div style="display:flex;gap:8px;">
+        <input type="password" id="deployToken" placeholder="Your DEPLOY_SECRET value"
+               autocorrect="off" autocapitalize="none" spellcheck="false"
+               data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"
+               style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--mono);padding:11px 13px;outline:none;" />
+        <button class="icon-btn" onclick="toggleDT()" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:18px;width:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">👁</button>
+      </div>
+    </div>
+    <button class="small-btn" onclick="saveServer()">💾 Save</button>
     <div style="margin-top:6px; font-size:11px; color:var(--muted);">
-      Set to your Replit deployed URL, e.g. <span style="color:var(--accent)">https://…replit.app/api</span>
+      URL: your Replit deployed URL e.g. <span style="color:var(--accent)">https://…replit.app/api</span><br/>
+      Token: the <span style="color:var(--accent)">DEPLOY_SECRET</span> Replit secret value (set once, stays on device)
     </div>
   </div>
 
@@ -197,7 +208,9 @@
       const base = getBase();
       if (!base) return;
       try {
-        const res  = await fetch(`${base}/deploy/status`);
+        const res  = await fetch(`${base}/deploy/status`, {
+          headers: { "X-Deploy-Token": getDeployToken() }
+        });
         const data = await res.json();
         if (!data.ok || !data.runs?.length) { runsEl.innerHTML = ""; return; }
 
@@ -228,11 +241,10 @@
       const base   = getBase();
       const source = document.getElementById("source").value;
       const btn    = document.getElementById("deployBtn");
+      const dtoken = getDeployToken();
 
-      if (!base) {
-        logLine("❌  Set the Kimi API Server URL first.", "err");
-        return;
-      }
+      if (!base) { logLine("❌  Set the Kimi API Server URL first.", "err"); return; }
+      if (!dtoken) { logLine("❌  Set the Deploy Token first.", "err"); return; }
 
       btn.disabled = true;
       btn.textContent = "⏳ Deploying…";
@@ -252,7 +264,10 @@
         logLine("[2/2] Dispatching deploy via server…", "info");
         const depRes = await fetch(`${base}/deploy/trigger`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Deploy-Token": dtoken
+          },
           body: JSON.stringify({ source })
         });
         const depData = await depRes.json();
