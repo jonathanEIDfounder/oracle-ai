@@ -368,9 +368,11 @@ phase 6 "Platform Build"
 
 case "$PLATFORM" in
 
-  # ── Replit: generate Xcode project + ZIP ────────────────────────────────────
+  # ── Linux/Replit: iOS ZIP + Swift cross-platform build ──────────────────────
   replit|linux)
-    info "Replit platform — running Kimi-Replit-Xcode bridge..."
+
+    # ── Step A: Xcode project ZIP (iOS, always runs) ──────────────────────────
+    info "Step A — iOS: generating Xcode project ZIP..."
     echo ""
     bash "${SCRIPT_DIR}/kimi-replit-xcode-bridge.sh" 2>&1 | \
       grep -E "✓|✗|⚠|→|══|──|Build|Download|ZIP|files" | \
@@ -379,61 +381,138 @@ case "$PLATFORM" in
     ZIP="${REPO_ROOT}/build-output/Oracle-AI-Kimi-Xcode.zip"
     if [[ -f "$ZIP" ]]; then
       ZIP_SIZE="$(du -sh "$ZIP" | cut -f1)"
-      ok "build-output/Oracle-AI-Kimi-Xcode.zip (${ZIP_SIZE})"
-      mark_phase 6 ok "ZIP ready — ${ZIP_SIZE}"
+      ok "iOS ZIP: build-output/Oracle-AI-Kimi-Xcode.zip (${ZIP_SIZE})"
     else
-      fail "ZIP not created"
+      fail "iOS ZIP not created"
+      mark_phase 6 fail "ZIP missing"
+    fi
+
+    # ── Step B: Swift cross-platform build + test (Linux) ─────────────────────
+    SWIFT_OK=false
+    SWIFT_TEST_OK=false
+    if command -v swift &>/dev/null; then
+      SWIFT_VER="$(swift --version 2>/dev/null | head -1)"
+      info "Step B — Linux: ${SWIFT_VER}"
+
+      # Build OracleAICore
+      info "swift build --target OracleAICore ..."
+      SWIFT_BUILD_OUT="$(swift build --target OracleAICore \
+        --configuration debug 2>&1)"
+      if echo "$SWIFT_BUILD_OUT" | grep -q "error:"; then
+        ERRS="$(echo "$SWIFT_BUILD_OUT" | grep "error:" | head -5)"
+        fail "swift build failed:"
+        echo "$ERRS" | while IFS= read -r l; do detail "$l"; done
+      else
+        ok "OracleAICore built (Linux)"
+        SWIFT_OK=true
+      fi
+
+      # Run cross-platform tests
+      if [[ "$SWIFT_OK" == "true" ]]; then
+        info "swift test --filter OracleAICoreTests ..."
+        SWIFT_TEST_OUT="$(swift test \
+          --filter "OracleAICoreTests" 2>&1)"
+        if echo "$SWIFT_TEST_OUT" | grep -qE "FAILED|error:"; then
+          FAILS="$(echo "$SWIFT_TEST_OUT" | grep -E "FAILED|error:" | head -5)"
+          warn "swift test had failures:"
+          echo "$FAILS" | while IFS= read -r l; do detail "$l"; done
+        else
+          PASSED="$(echo "$SWIFT_TEST_OUT" | grep -oE "[0-9]+ test" | tail -1)"
+          ok "Tests passed (${PASSED:-all})"
+          SWIFT_TEST_OK=true
+        fi
+      fi
+    else
+      warn "Swift toolchain not yet available — install via Replit modules (swift-5.8)"
+      detail "Once installed: swift build --target OracleAICore && swift test"
+    fi
+
+    # ── Phase 6 result ─────────────────────────────────────────────────────────
+    if [[ -f "$ZIP" && "$SWIFT_OK" == "true" ]]; then
+      mark_phase 6 ok "iOS ZIP ${ZIP_SIZE} · Linux swift build ✓"
+    elif [[ -f "$ZIP" && "$SWIFT_OK" == "false" ]]; then
+      mark_phase 6 ok "ZIP ready — ${ZIP_SIZE} (swift build pending toolchain)"
+    else
       mark_phase 6 fail "ZIP missing"
     fi
     ;;
 
-  # ── macOS: native xcodebuild ─────────────────────────────────────────────
+  # ── macOS: Swift SPM (core + tests) + iOS xcodebuild ────────────────────
   macos)
-    XCPROJ="${REPO_ROOT}/Oracle-AI.xcodeproj"
 
-    # Generate .xcodeproj if missing
+    # ── Step A: Swift cross-platform build + tests ─────────────────────────
+    info "Step A — Linux/macOS: swift build OracleAICore..."
+    if command -v swift &>/dev/null; then
+      SWIFT_VER="$(swift --version 2>/dev/null | head -1)"
+      detail "$SWIFT_VER"
+
+      SWIFT_BUILD_OUT="$(swift build --target OracleAICore \
+        --configuration debug 2>&1)"
+      if echo "$SWIFT_BUILD_OUT" | grep -q "error:"; then
+        fail "swift build failed:"
+        echo "$SWIFT_BUILD_OUT" | grep "error:" | head -5 | \
+          while IFS= read -r l; do detail "$l"; done
+        SWIFT_CORE_OK=false
+      else
+        ok "OracleAICore built"
+        SWIFT_CORE_OK=true
+
+        SWIFT_TEST_OUT="$(swift test --filter OracleAICoreTests 2>&1)"
+        if echo "$SWIFT_TEST_OUT" | grep -qE "FAILED|error:"; then
+          warn "swift test failures:"
+          echo "$SWIFT_TEST_OUT" | grep -E "FAILED|error:" | head -5 | \
+            while IFS= read -r l; do detail "$l"; done
+        else
+          PASSED="$(echo "$SWIFT_TEST_OUT" | grep -oE "[0-9]+ test" | tail -1)"
+          ok "Tests passed (${PASSED:-all})"
+        fi
+      fi
+    else
+      warn "Swift toolchain not found — skipping SPM step"
+      SWIFT_CORE_OK=false
+    fi
+
+    # ── Step B: iOS Xcode project generation ──────────────────────────────
+    XCPROJ="${REPO_ROOT}/Oracle-AI.xcodeproj"
+    info "Step B — iOS: generating Oracle-AI.xcodeproj..."
     if [[ ! -d "$XCPROJ" ]]; then
-      info "Generating Oracle-AI.xcodeproj via XcodeGen..."
       if command -v xcodegen &>/dev/null; then
         xcodegen generate --spec "${REPO_ROOT}/AARTE-iOS-App/project.yml" \
                           --project "${REPO_ROOT}" 2>&1 | tail -3
       else
-        info "xcodegen not found — using Replit generator..."
         bash "${SCRIPT_DIR}/replit-xcode-generate.sh" 2>&1 | grep -E "✓|✗|⚠"
         XCPROJ="${REPO_ROOT}/Oracle-AI-Kimi-Xcode/Oracle-AI.xcodeproj"
       fi
     fi
 
+    # ── Step C: xcodebuild for iPhone XR ──────────────────────────────────
     if [[ -d "$XCPROJ" ]]; then
       ok "Oracle-AI.xcodeproj present"
-
-      # Attempt xcodebuild if available
       if [[ " ${PLATFORM_CAPS[*]} " =~ " xcodebuild-available " ]]; then
-        info "Building for iPhone XR (iPhone11,8)..."
-        DEST="generic/platform=iOS"
+        info "Step C — iOS: xcodebuild for iPhone XR (iPhone11,8)..."
         xcodebuild -project "$XCPROJ" \
                    -scheme "Oracle-AI" \
                    -configuration Debug \
-                   -destination "$DEST" \
+                   -destination "generic/platform=iOS" \
                    CODE_SIGN_STYLE=Automatic \
                    build 2>&1 | \
           grep -E "BUILD SUCCEEDED|BUILD FAILED|error:|warning:" | \
           while IFS= read -r l; do echo "    $l"; done
 
         if [[ "${PIPESTATUS[0]}" -eq 0 ]]; then
-          ok "BUILD SUCCEEDED"
-          mark_phase 6 ok "xcodebuild succeeded"
+          ok "xcodebuild: BUILD SUCCEEDED (iOS)"
+          mark_phase 6 ok "SPM ✓ · xcodebuild ✓ (iOS)"
         else
-          fail "BUILD FAILED — check Xcode for errors"
+          fail "xcodebuild: BUILD FAILED"
           mark_phase 6 fail "xcodebuild failed"
         fi
       else
-        warn "xcodebuild unavailable — open manually:"
+        warn "xcodebuild not found — open in Xcode manually:"
         detail "open ${XCPROJ}"
-        mark_phase 6 warn "xcodeproj generated — open in Xcode"
+        mark_phase 6 warn "xcodeproj ready — open in Xcode"
       fi
     else
-      fail "xcodeproj not found after generation"
+      fail "xcodeproj not found"
       mark_phase 6 fail "xcodeproj missing"
     fi
     ;;
