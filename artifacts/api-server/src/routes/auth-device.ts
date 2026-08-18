@@ -10,6 +10,10 @@
 import { Router } from "express";
 import { startDeviceFlow, getDeviceFlowStatus } from "../lib/github-device-flow";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
+void _S1AF_ANCHOR;
+
 const router = Router();
 
 // ── POST /auth/github-device/start ─────────────────────────────────────────
