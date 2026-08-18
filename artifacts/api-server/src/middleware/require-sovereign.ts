@@ -11,6 +11,10 @@ import jwt from "jsonwebtoken";
 import { CONFIG } from "../lib/config";
 import { getBootGeneration } from "../lib/boot-generation";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
+void _S1AF_ANCHOR;
+
 // Paths are relative to the /api prefix (Express strips it before matching)
 const EXEMPT = [
   "/healthz",
@@ -20,6 +24,7 @@ const EXEMPT = [
   "/auth/github-device",   // device-flow bootstrap — no JWT yet
   "/sentient/boot",        // boot-all — server is sovereign-environment-only
   "/sentient/boot-status",
+  "/sentient/seal-env",    // credential sealing — runs before biometric enrollment
 ];
 
 export function requireSovereign(req: Request, res: Response, next: NextFunction): void {
