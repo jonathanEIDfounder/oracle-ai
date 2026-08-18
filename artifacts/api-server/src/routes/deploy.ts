@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from "express";
-import { resolveGitHubToken, probeGitHubToken } from "../lib/github-connector";
+import { resolveGitHubToken, validateGitHubToken } from "../lib/github-connector";
 
 const router = Router();
 
@@ -47,18 +47,22 @@ function ghHeaders(token: string) {
 
 router.get("/config", async (_req: Request, res: Response) => {
   const deploySecret = process.env.DEPLOY_SECRET;
-  const ghProbe      = await probeGitHubToken();
+  const ghCheck      = await validateGitHubToken();
 
-  const fields: Record<string, { ok: boolean; source?: string; obfuscated?: string }> = {
+  const ds = deploySecret ?? "";
+  const fields: Record<string, { ok: boolean; source?: string; obfuscated?: string; login?: string; scopes?: string[]; error?: string }> = {
     DEPLOY_SECRET: {
-      ok: !!(deploySecret && deploySecret.length >= 8),
-      obfuscated: deploySecret
-        ? deploySecret.slice(0, 2) + "•".repeat(Math.max(4, deploySecret.length - 4)) + deploySecret.slice(-2)
+      ok: !!(ds && ds.length >= 8),
+      obfuscated: ds
+        ? ds.slice(0, 2) + "•".repeat(Math.max(4, ds.length - 4)) + ds.slice(-2)
         : undefined,
     },
     GITHUB_TOKEN: {
-      ok: ghProbe.available,
-      source: ghProbe.source,
+      ok:     ghCheck.valid,
+      source: ghCheck.source,
+      login:  ghCheck.login,
+      scopes: ghCheck.scopes,
+      error:  ghCheck.error,
     },
   };
 
@@ -74,13 +78,14 @@ router.get("/config", async (_req: Request, res: Response) => {
 // ── GET /deploy/health ──────────────────────────────────────
 
 router.get("/health", async (_req: Request, res: Response) => {
-  const ghProbe = await probeGitHubToken();
+  const ghCheck   = await validateGitHubToken();
   const hasSecret = !!(process.env.DEPLOY_SECRET?.length);
   res.json({
-    ok:        ghProbe.available && hasSecret,
+    ok:        ghCheck.valid && hasSecret,
     server:    "kimi-api",
-    github:    ghProbe.available ? "configured" : "missing",
-    githubSrc: ghProbe.source,
+    github:    ghCheck.valid ? "valid" : "invalid",
+    githubSrc: ghCheck.source,
+    githubErr: ghCheck.error,
     secret:    hasSecret ? "configured" : "missing",
     timestamp: new Date().toISOString(),
   });
