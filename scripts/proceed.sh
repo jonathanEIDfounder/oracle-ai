@@ -234,13 +234,18 @@ fi
 # ── Deploy secret ─────────────────────────────────────────────────────────────
 info "Deploy secret:"
 _DS="${DEPLOY_SECRET:-}"
+# Fall back to cipherstore when env var is a placeholder
+if [[ "${#_DS}" -lt 16 ]]; then
+  _DS="$(s1af_decrypt_named deploy-secret 2>/dev/null || echo "")"
+fi
 if [[ "${#_DS}" -ge 16 ]]; then
-  ok "DEPLOY_SECRET set (${#_DS} chars)"
+  ok "Deploy secret valid (${#_DS} chars, src: cipherstore)"
   TOKEN_OK=$((TOKEN_OK+1))
 else
-  warn "DEPLOY_SECRET missing or too short (<16 chars)"
+  warn "DEPLOY_SECRET missing — run: make tokens"
   TOKEN_WARN=$((TOKEN_WARN+1))
 fi
+unset _DS
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 detail "Tokens OK: ${TOKEN_OK}  Warnings: ${TOKEN_WARN}"
