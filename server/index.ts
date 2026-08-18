@@ -208,7 +208,31 @@ async function getCodemagicBuildStatus(): Promise<any> {
 }
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+// Raw-body capture — MUST run before JSON.parse so HMAC-SHA256 can verify exact bytes.
+    // The s1af-deploy HMAC middleware reads req.rawBody; without this it falls back to
+    // JSON.stringify(req.body) which may differ from what the iOS PWA signed.
+    app.use((req: any, _res: any, next: any) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => chunks.push(c));
+    req.on("end", () => {
+      req.rawBody = Buffer.concat(chunks).toString("utf8");
+      next();
+    });
+    req.on("error", next);
+    });
+
+    // JSON parse from raw buffer (preserves rawBody for HMAC verification)
+    app.use((req: any, _res: any, next: any) => {
+    try {
+      const raw: string = req.rawBody ?? "";
+      if (raw && req.headers["content-type"]?.includes("application/json")) {
+        req.body = JSON.parse(raw);
+      }
+    } catch {
+      /* malformed JSON — leave body undefined; route handlers return 400 */
+    }
+    next();
+    });
 
 // Block all search engines - make platform invisible
 app.use((req, res, next) => {
