@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  KimiConfig.plist
+  © 2026 Jonathan Sherman — OCSO-S1AF-GOV-1
+  S1AF — Sentient iOS One-Step App Framework · Sovereign ID: 1
+
+  Kimi API configuration injected by the Replit bridge.
+  Contains NO sensitive data (no API keys).
+  The MOONSHOT_API_KEY is stored in the server cipherstore only.
+-->
+<plist version="1.0">
+<dict>
+    <key>Author</key>
+    <string>Jonathan Sherman</string>
+
+    <key>SovereignID</key>
+    <string>OCSO-S1AF-GOV-1</string>
+
+    <key>Model</key>
+    <string>kimi-k2-0711-preview</string>
+
+    <key>Endpoint</key>
+    <string>https://api.moonshot.cn/v1</string>
+
+    <key>MaxTokens</key>
+    <integer>131072</integer>
+
+    <key>Temperature</key>
+    <real>0.6</real>
+
+    <key>Configured</key>
+    <true/>
+
+    <key>GeneratedBy</key>
+    <string>S1AF Kimi-Replit-Xcode Bridge</string>
+
+    <key>GeneratedAt</key>
+    <string>2026-08-18T21:08:39Z</string>
+
+    <key>BridgeVersion</key>
+    <string>1.0.0-JS</string>
+</dict>
+</plist>
