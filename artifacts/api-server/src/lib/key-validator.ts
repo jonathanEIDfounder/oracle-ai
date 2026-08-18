@@ -36,7 +36,7 @@ export interface GitHubResult extends ValidationResult {
 export async function validateMoonshotKey(key: string): Promise<MoonshotResult> {
   const now = new Date().toISOString();
   try {
-    const res = await fetch("https://api.moonshot.cn/v1/models", {
+    const res = await fetch("https://api.moonshot.ai/v1/models", {
       headers: {
         Authorization: `Bearer ${key}`,
         "User-Agent":  "S1AF-Rotation/1.0",
