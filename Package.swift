@@ -36,11 +36,30 @@ let package = Package(
             ]
         ),
 
+        // ── AARTE — Apple AI Runtime & Tactical Engine ──────────
+        // Hybrid classical-quantum behavioral authentication.
+        // CoreML and UIKit symbols are wrapped in #if canImport()
+        // so the target compiles cross-platform (Linux CI).
+        .target(
+            name: "AARTE",
+            path: "Sources/AARTE",
+            swiftSettings: [
+                .unsafeFlags(["-strict-concurrency=complete"]),
+            ]
+        ),
+
         // ── Cross-platform tests ────────────────────────────────
         .testTarget(
             name: "OracleAICoreTests",
             dependencies: ["OracleAICore"],
             path: "Tests/OracleAICoreTests"
+        ),
+
+        // ── AARTE tests ─────────────────────────────────────────
+        .testTarget(
+            name: "AARTETests",
+            dependencies: ["AARTE"],
+            path: "Tests/AARTE"
         ),
     ]
 )
