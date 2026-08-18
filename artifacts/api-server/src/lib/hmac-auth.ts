@@ -1,50 +1,86 @@
 /**
+ * © 2026 Jonathan Sherman — OCSO-S1AF-GOV-1
+ * S1AF — Sentient iOS One-Step App Framework · Sovereign ID: 1
+ * Author      : Jonathan Sherman (jonathanEIDfounder)
+ * Governance  : OCSO-S1AF-GOV-1
+ * Copyright   : © 2026 Jonathan Sherman. All rights reserved.
+ * License     : PROPRIETARY — No license granted without express written permission.
+ * DRM         : S1AF-DRM-LOCKED
+ * Notice      : Unauthorized use, reproduction, modification, distribution, or
+ *               sublicensing is strictly prohibited. Removal of this authorship
+ *               notice violates applicable copyright law.
+ */
+
+/**
+ * © 2026 Jonathan Sherman — S1AF (Sentient iOS One-Step App Framework)
+ * Sovereign ID: 1 · All rights reserved.
+ *
  * HMAC-SHA256 request authentication.
  *
- * The client signs: HMAC-SHA256(canonical, secret)
- *   canonical = `${timestamp}\n${method}\n${path}\n${bodyHash}`
- *   bodyHash  = hex(SHA-256(rawBody))  — empty string for no body
+ * The client signs: HMAC-SHA256(canonical, DEPLOY_SECRET)
+ *   canonical = `${timestamp}\n${METHOD}\n${path}\n${SHA256(rawBody)}`
+ *   bodyHash  = hex(SHA-256(rawBody))  — empty string when no body
  *
  * Headers sent by client:
  *   X-Deploy-Timestamp: <unix seconds>
- *   X-Deploy-Signature: <hex HMAC>
+ *   X-Deploy-Signature: <lowercase hex HMAC>
  *
- * Legacy fallback (X-Deploy-Token header) still accepted for
- * backwards compatibility with existing curl scripts.
+ * Security properties:
+ *   • Clock skew guard    — ±REPLAY_WINDOW_S (5 min); requests outside window → 401
+ *   • Replay prevention   — every accepted signature is stored in replayCache until
+ *                           its window expires; re-submitting the same sig → 401
+ *   • Timing-safe compare — crypto.timingSafeEqual, no early exit
+ *   • No secret on wire   — raw DEPLOY_SECRET never transmitted
+ *   • HMAC mandatory      — legacy token fallback is opt-in (allowLegacy: true),
+ *                           disabled by default
  *
- * Replay window: ±300 seconds (5 minutes).
- * Rate limit:    MAX_REQUESTS per WINDOW_MS per remote IP.
+ * Rate limit: CONFIG.rateLimit.hmacPerMin requests per minute per IP.
+ * Export hmacRateBuckets so the daemon prune loop can clean it up.
  */
 
 import crypto from "node:crypto";
 import { type Request, type Response, type NextFunction } from "express";
+import { CONFIG } from "./config";
 
-const REPLAY_WINDOW_S = 300;
-const MAX_REQUESTS    = 10;
-const WINDOW_MS       = 60_000; // 1 minute
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
+void _S1AF_ANCHOR;
 
-// ── In-memory rate limiter ────────────────────────────────────
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+const REPLAY_WINDOW_S = CONFIG.hmacReplayWindowSec; // 300
+const MAX_REQUESTS    = CONFIG.rateLimit.hmacPerMin; // 10
+const WINDOW_MS       = 60_000;
+
+// ── Rate limiter — exported for daemon registration ───────────────────────────
+export const hmacRateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function checkRateLimit(ip: string): boolean {
-  const now    = Date.now();
-  let   bucket = rateBuckets.get(ip);
+  const now   = Date.now();
+  let bucket  = hmacRateBuckets.get(ip);
   if (!bucket || bucket.resetAt < now) {
     bucket = { count: 0, resetAt: now + WINDOW_MS };
-    rateBuckets.set(ip, bucket);
+    hmacRateBuckets.set(ip, bucket);
   }
   bucket.count++;
   return bucket.count <= MAX_REQUESTS;
 }
 
-// Prune old buckets every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [k, v] of rateBuckets) if (v.resetAt < now) rateBuckets.delete(k);
-}, 5 * 60_000);
+// ── Replay cache ──────────────────────────────────────────────────────────────
+// Maps lowercase hex signature → unix expiry. Prevents a valid signed request
+// from being replayed within its 5-min window. Lazy-pruned at >10 k entries.
+const replayCache = new Map<string, number>();
 
-// ── HMAC helpers ──────────────────────────────────────────────
-function hmac(secret: string, data: string): string {
+function checkAndStoreReplay(sig: string, ts: number): boolean {
+  const now = Math.floor(Date.now() / 1000);
+  if (replayCache.size > 10_000) {
+    for (const [k, exp] of replayCache) if (exp < now) replayCache.delete(k);
+  }
+  if (replayCache.has(sig)) return false; // already seen — replay!
+  replayCache.set(sig, ts + REPLAY_WINDOW_S + 5); // small buffer past window
+  return true;
+}
+
+// ── HMAC helpers ──────────────────────────────────────────────────────────────
+function hmacHex(secret: string, data: string): string {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
@@ -52,41 +88,49 @@ function sha256hex(data: string): string {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-/** Constant-time string comparison */
-function safeEqual(a: string, b: string): boolean {
+/** Timing-safe string comparison — uses Node's native crypto.timingSafeEqual. */
+export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
+  } catch {
+    return false;
+  }
 }
 
-// ── Canonical string ──────────────────────────────────────────
+// ── Canonical string ──────────────────────────────────────────────────────────
 function canonical(ts: number, method: string, path: string, body: string): string {
-  const bodyHash = sha256hex(body || "");
-  return `${ts}\n${method.toUpperCase()}\n${path}\n${bodyHash}`;
+  return `${ts}\n${method.toUpperCase()}\n${path}\n${sha256hex(body || "")}`;
 }
 
-// ── Middleware factory ─────────────────────────────────────────
+// ── Middleware factory ─────────────────────────────────────────────────────────
+/**
+ * requireAuth() — HMAC authentication middleware.
+ *
+ * @param options.allowLegacy  Accept X-Deploy-Token header for back-compat.
+ *                             Default: false — HMAC is mandatory.
+ */
 export function requireAuth(options?: { allowLegacy?: boolean }) {
-  const { allowLegacy = true } = options ?? {};
+  const { allowLegacy = false } = options ?? {};
 
   return (req: Request, res: Response, next: NextFunction): void => {
-    const secret = process.env.DEPLOY_SECRET;
+    const secret = CONFIG.deploySecret;
     if (!secret || secret.length < 8) {
       res.status(503).json({ ok: false, error: "Deploy endpoint not configured", field: "DEPLOY_SECRET" });
       return;
     }
 
-    // ── Rate limit ────────────────────────────────────────────
-    const ip = (req.headers["x-forwarded-for"] as string || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+    // ── Rate limit (by first non-proxy IP) ────────────────────────────────────
+    const ip = ((req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown")
+      .split(",")[0].trim();
     if (!checkRateLimit(ip)) {
       res.status(429).json({ ok: false, error: "Rate limit exceeded — try again in a minute" });
       return;
     }
 
-    // ── HMAC path (preferred) ─────────────────────────────────
+    // ── HMAC path ─────────────────────────────────────────────────────────────
     const tsHeader  = req.headers["x-deploy-timestamp"] as string | undefined;
-    const sigHeader = req.headers["x-deploy-signature"] as string | undefined;
+    const sigHeader = req.headers["x-deploy-signature"]  as string | undefined;
 
     if (tsHeader && sigHeader) {
       const ts  = parseInt(tsHeader, 10);
@@ -95,18 +139,28 @@ export function requireAuth(options?: { allowLegacy?: boolean }) {
         res.status(401).json({ ok: false, error: "Request expired or clock skew too large (±5 min allowed)" });
         return;
       }
-      const rawBody = (req as any).rawBody ?? JSON.stringify(req.body ?? "");
+
+      const rawBody = ((req as unknown as Record<string, unknown>).rawBody as string) ?? JSON.stringify(req.body ?? "");
       const canon   = canonical(ts, req.method, req.originalUrl.split("?")[0], rawBody);
-      const expected = hmac(secret, canon);
-      if (!safeEqual(sigHeader.toLowerCase(), expected)) {
+      const expected = hmacHex(secret, canon);
+      const sig      = sigHeader.toLowerCase();
+
+      if (!safeEqual(sig, expected)) {
         res.status(401).json({ ok: false, error: "Invalid HMAC signature" });
         return;
       }
+
+      // Replay check AFTER signature validation (avoid poisoning cache with bad sigs)
+      if (!checkAndStoreReplay(sig, ts)) {
+        res.status(401).json({ ok: false, error: "Replayed request — generate a fresh signature" });
+        return;
+      }
+
       next();
       return;
     }
 
-    // ── Legacy static-token path ──────────────────────────────
+    // ── Legacy static-token fallback (opt-in only) ────────────────────────────
     if (allowLegacy) {
       const provided =
         (req.headers["x-deploy-token"] as string | undefined) ??
@@ -120,18 +174,20 @@ export function requireAuth(options?: { allowLegacy?: boolean }) {
     res.status(401).json({
       ok: false,
       error: "Auth required — include X-Deploy-Timestamp + X-Deploy-Signature headers",
-      hint: allowLegacy ? "Legacy X-Deploy-Token header also accepted" : undefined,
+      ...(allowLegacy ? { hint: "Legacy X-Deploy-Token header also accepted" } : {}),
     });
   };
 }
 
-// ── Client-side signing helper (for Node.js scripts / oracle-ai) ──
-export function signRequest(secret: string, method: string, path: string, body: string = ""): {
-  "X-Deploy-Timestamp": string;
-  "X-Deploy-Signature": string;
-} {
-  const ts     = Math.floor(Date.now() / 1000);
-  const canon  = canonical(ts, method, path, body);
-  const sig    = hmac(secret, canon);
+// ── Client-side signing helper (Node.js scripts, oracle-ai, shell) ────────────
+export function signRequest(
+  secret: string,
+  method: string,
+  path:   string,
+  body:   string = "",
+): { "X-Deploy-Timestamp": string; "X-Deploy-Signature": string } {
+  const ts    = Math.floor(Date.now() / 1000);
+  const canon = canonical(ts, method, path, body);
+  const sig   = hmacHex(secret, canon);
   return { "X-Deploy-Timestamp": String(ts), "X-Deploy-Signature": sig };
 }
