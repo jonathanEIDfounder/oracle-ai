@@ -2,261 +2,142 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!--
-    iOS 18 PWA — Viewport + Safe Areas
-    viewport-fit=cover lets content flow under Dynamic Island + home indicator.
-  -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
-  <!-- PWA / Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="S1AF Deploy" />
   <meta name="theme-color" content="#0a0e1a" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme: light)" />
-
-  <!-- iOS 18 + iPhone 15/16 Pro splash screens -->
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' rx='13' fill='%230a0e1a'/%3E%3Ctext x='30' y='42' font-size='32' text-anchor='middle'%3E🚀%3C/text%3E%3C/svg%3E" />
-
   <title>S1AF Deploy</title>
   <style>
-    /* ── Design tokens ──────────────────────────────────── */
     :root {
-      --bg:         #0a0e1a;
-      --card:       #111827;
-      --card-hi:    #16213a;
-      --border:     #1e2d45;
-      --accent:     #3b82f6;
-      --accent-glow:rgba(59,130,246,.25);
-      --green:      #22c55e;
-      --red:        #ef4444;
-      --yellow:     #f59e0b;
-      --text:       #f1f5f9;
-      --muted:      #64748b;
-      --mono:       'SF Mono', ui-monospace, monospace;
-      --radius-lg:  18px;
-      --radius-md:  12px;
-      --radius-sm:  8px;
-
-      /* iOS 18 Dynamic Island / notch awareness */
-      --top:    env(safe-area-inset-top,    20px);
-      --right:  env(safe-area-inset-right,  16px);
-      --bottom: env(safe-area-inset-bottom, 20px);
-      --left:   env(safe-area-inset-left,   16px);
+      --bg:#0a0e1a; --card:#111827; --card-hi:#16213a; --border:#1e2d45;
+      --accent:#3b82f6; --accent-glow:rgba(59,130,246,.25);
+      --green:#22c55e; --red:#ef4444; --yellow:#f59e0b;
+      --text:#f1f5f9; --muted:#64748b;
+      --mono:'SF Mono',ui-monospace,monospace;
+      --r-lg:18px; --r-md:12px; --r-sm:8px;
+      --top:env(safe-area-inset-top,20px); --right:env(safe-area-inset-right,16px);
+      --bottom:env(safe-area-inset-bottom,20px); --left:env(safe-area-inset-left,16px);
     }
-
-    /* Light mode override */
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg:     #f8fafc;
-        --card:   #ffffff;
-        --card-hi:#f1f5f9;
-        --border: #e2e8f0;
-        --text:   #0f172a;
-        --muted:  #64748b;
-      }
+    @media(prefers-color-scheme:light){
+      :root{--bg:#f8fafc;--card:#fff;--card-hi:#f1f5f9;--border:#e2e8f0;--text:#0f172a;}
     }
-
-    /* ── Reset ──────────────────────────────────────────── */
-    *, *::before, *::after {
-      box-sizing: border-box; margin: 0; padding: 0;
-      -webkit-tap-highlight-color: transparent;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{
+      background:var(--bg);color:var(--text);
+      font-family:-apple-system,'SF Pro Display',BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+      min-height:100dvh;
+      padding:max(var(--top),16px) max(var(--right),16px) max(var(--bottom),24px) max(var(--left),16px);
+      display:flex;flex-direction:column;gap:14px;
+      -webkit-overflow-scrolling:touch;overscroll-behavior:none;
     }
+    @media(display-mode:standalone){body{padding-top:max(var(--top),20px);}}
 
-    /* ── Body — iOS 18: dvh, safe areas ─────────────────── */
-    body {
-      background: var(--bg);
-      color: var(--text);
-      /* SF Pro on all Apple devices; fallback for Android */
-      font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont,
-                   'Helvetica Neue', sans-serif;
-      min-height: 100dvh;
-      /* Respect Dynamic Island (top) and home indicator (bottom) */
-      padding:
-        max(var(--top), 16px)
-        max(var(--right), 16px)
-        max(var(--bottom), 24px)
-        max(var(--left), 16px);
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      /* Smooth momentum scrolling on iOS */
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: none;
-    }
+    header{text-align:center;padding-top:8px;}
+    .logo{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+    h1{font-size:26px;font-weight:800;letter-spacing:-.02em;}
+    .hero-strip{height:3px;border-radius:3px;margin:4px auto 0;width:60px;background:linear-gradient(90deg,#3b82f6,#8b5cf6,#06b6d4);}
+    .sub{font-size:13px;color:var(--muted);margin-top:4px;}
+    .ai-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;
+      background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;background-clip:text;}
 
-    /* ── Hide when saved to home screen & standalone ─────── */
-    @media (display-mode: standalone) {
-      body { padding-top: max(var(--top), 20px); }
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;}
+    label{display:block;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+    input[type="text"],input[type="url"],input[type="password"],select{
+      width:100%;min-height:44px;background:var(--bg);border:1px solid var(--border);
+      border-radius:var(--r-md);color:var(--text);font-size:15px;font-family:var(--mono);
+      padding:11px 13px;outline:none;-webkit-appearance:none;
     }
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
 
-    /* ── Header ─────────────────────────────────────────── */
-    header { text-align: center; padding-top: 8px; }
-    .logo  {
-      font-family: var(--mono); font-size: 10px;
-      letter-spacing: .2em; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 6px;
+    /* Server mode toggle */
+    .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
+    .mode-tab{
+      min-height:40px;border:1px solid var(--border);border-radius:var(--r-md);
+      background:var(--bg);color:var(--muted);font-size:13px;font-weight:500;
+      cursor:pointer;touch-action:manipulation;transition:all .15s;
     }
-    h1 { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
-    .sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .mode-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+    .mode-tab:active{opacity:.75;}
 
-    /* iOS 18 Mesh gradient strip (decorative) */
-    .hero-strip {
-      height: 3px; border-radius: 3px; margin: 2px auto 0; width: 60px;
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
-    }
+    .server-panel{display:none;}
+    .server-panel.active{display:block;}
 
-    /* ── Cards ──────────────────────────────────────────── */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
+    /* Server status pill */
+    .server-pill{
+      display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);
+      padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--bg);
+      margin-top:8px;
     }
+    .pill-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+    .pill-dot.ok{background:var(--green);}
+    .pill-dot.err{background:var(--red);}
+    .pill-dot.checking{background:var(--accent);animation:pulse 1s infinite;}
 
-    /* ── Labels ─────────────────────────────────────────── */
-    label {
-      display: block;
-      font-size: 10px; font-weight: 600;
-      letter-spacing: .1em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 8px;
+    .deploy-btn{
+      width:100%;min-height:54px;color:#fff;font-size:18px;font-weight:700;
+      border:none;border-radius:var(--r-lg);padding:16px;cursor:pointer;
+      letter-spacing:.02em;touch-action:manipulation;
+      background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);
+      transition:transform .1s,opacity .1s;
     }
+    .deploy-btn:active{transform:scale(.97);opacity:.85;}
+    .deploy-btn:disabled{opacity:.4;cursor:default;transform:none;}
+    .deploy-btn.success{background:linear-gradient(135deg,#16a34a,#22c55e);}
+    .deploy-btn.failure{background:linear-gradient(135deg,#b91c1c,#ef4444);}
 
-    /* ── Inputs — iOS 18 touch targets (min 44pt) ────────── */
-    input[type="text"],
-    input[type="url"],
-    input[type="password"],
-    select {
-      width: 100%;
-      min-height: 44px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      color: var(--text);
-      font-size: 15px;
-      font-family: var(--mono);
-      padding: 11px 13px;
-      outline: none;
-      -webkit-appearance: none;
-      /* iOS 18: allow Writing Tools on text inputs */
-      autocorrect: on;
+    #log{
+      font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--muted);
+      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);
+      padding:12px;min-height:80px;max-height:220px;overflow-y:auto;white-space:pre-wrap;
+      -webkit-overflow-scrolling:touch;
     }
-    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .log-ok{color:var(--green);} .log-err{color:var(--red);}
+    .log-info{color:var(--accent);} .log-warn{color:var(--yellow);}
 
-    /* ── Apple Intelligence — Writing Tools hint on textarea */
-    textarea {
-      writing-mode: horizontal-tb;
-      /* iOS 18 Writing Tools activates on .writable textareas */
-    }
+    .status-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+    .status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+    .status-dot.err{background:var(--red);box-shadow:0 0 6px var(--red);}
+    .status-dot.spin{background:var(--accent);animation:pulse 1s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-    /* ── Deploy button ──────────────────────────────────── */
-    .deploy-btn {
-      width: 100%;
-      min-height: 54px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 18px; font-weight: 700;
-      border: none;
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      cursor: pointer;
-      letter-spacing: .02em;
-      /* iOS 18: immediate touch response — no 300ms delay */
-      touch-action: manipulation;
-      transition: transform .1s, opacity .1s;
-      /* Mesh gradient background on iOS 18 */
-      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    .run-card{
+      background:var(--card-hi);border:1px solid var(--border);border-radius:var(--r-md);
+      padding:10px 12px;margin-top:8px;
+      display:flex;justify-content:space-between;align-items:center;gap:8px;
     }
-    .deploy-btn:active   { transform: scale(0.97); opacity: .85; }
-    .deploy-btn:disabled { opacity: .4; cursor: default; transform: none; }
-    .deploy-btn.success  { background: linear-gradient(135deg, #16a34a, #22c55e); }
-    .deploy-btn.failure  { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+    .run-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .run-time{font-size:11px;color:var(--muted);margin-top:2px;}
+    .run-badge{font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:6px;flex-shrink:0;}
+    .badge-queued{background:#1e2d45;color:var(--muted);}
+    .badge-in_progress{background:#1e3a5f;color:var(--accent);}
+    .badge-success{background:#14532d;color:var(--green);}
+    .badge-failure{background:#450a0a;color:var(--red);}
+    .badge-cancelled{background:#2a1a00;color:var(--yellow);}
 
-    /* ── Log ────────────────────────────────────────────── */
-    #log {
-      font-family: var(--mono); font-size: 12px; line-height: 1.8;
-      color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--radius-md);
-      padding: 12px;
-      min-height: 80px; max-height: 220px;
-      overflow-y: auto; white-space: pre-wrap;
-      -webkit-overflow-scrolling: touch;
+    .row{display:flex;align-items:center;gap:8px;}
+    .ml-auto{margin-left:auto;}
+    .link{color:var(--accent);text-decoration:none;} .link:active{opacity:.6;}
+    .small-btn{
+      font-size:12px;font-weight:500;color:var(--muted);background:var(--bg);
+      border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 12px;
+      cursor:pointer;touch-action:manipulation;min-height:32px;
     }
-    .log-ok   { color: var(--green); }
-    .log-err  { color: var(--red); }
-    .log-info { color: var(--accent); }
-    .log-warn { color: var(--yellow); }
-
-    /* ── Status indicator ───────────────────────────────── */
-    .status-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--muted); flex-shrink: 0;
+    .small-btn:active{opacity:.6;}
+    .icon-btn{
+      background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);
+      color:var(--muted);font-size:18px;width:46px;min-height:44px;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+      touch-action:manipulation;
     }
-    .status-dot.ok   { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .status-dot.err  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
-    .status-dot.spin { background: var(--accent); animation: pulse 1s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.25} }
-    #statusText { font-size: 13px; }
-
-    /* ── Run cards ──────────────────────────────────────── */
-    .run-card {
-      background: var(--card-hi); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: 10px 12px;
-      margin-top: 8px;
-      display: flex; justify-content: space-between; align-items: center; gap: 8px;
-    }
-    .run-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .run-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .run-badge {
-      font-size: 11px; font-family: var(--mono); font-weight: 600;
-      padding: 3px 9px; border-radius: 6px; flex-shrink: 0;
-    }
-    .badge-queued      { background:#1e2d45; color:var(--muted); }
-    .badge-in_progress { background:#1e3a5f; color:var(--accent); }
-    .badge-success     { background:#14532d; color:var(--green); }
-    .badge-failure     { background:#450a0a; color:var(--red); }
-    .badge-cancelled   { background:#2a1a00; color:var(--yellow); }
-
-    /* ── Utility ────────────────────────────────────────── */
-    .row { display: flex; align-items: center; gap: 8px; }
-    .ml-auto { margin-left: auto; }
-    .link  { color: var(--accent); text-decoration: none; }
-    .link:active { opacity: .6; }
-
-    .small-btn {
-      font-size: 12px; font-weight: 500;
-      color: var(--muted); background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 6px 12px; cursor: pointer;
-      touch-action: manipulation;
-      min-height: 32px;
-    }
-    .small-btn:active { opacity: .6; }
-
-    .icon-btn {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: var(--radius-md); color: var(--muted);
-      font-size: 18px; width: 46px; min-height: 44px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; flex-shrink: 0;
-      touch-action: manipulation;
-    }
-    .icon-btn:active { opacity: .6; }
-
-    footer {
-      text-align: center; font-size: 11px; color: var(--border);
-      padding-bottom: 8px; line-height: 1.8;
-    }
-
-    /* ── iOS 18 AI badge ────────────────────────────────── */
-    .ai-badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 10px; font-weight: 600; letter-spacing: .05em;
-      background: linear-gradient(135deg,#3b82f6,#8b5cf6);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+    .icon-btn:active{opacity:.6;}
+    footer{text-align:center;font-size:11px;color:var(--border);padding-bottom:8px;line-height:1.8;}
+    .divider{height:1px;background:var(--border);margin:10px 0;}
+    .hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;}
   </style>
 </head>
 <body>
@@ -265,246 +146,305 @@
     <div class="logo">S1AF v1.0.0-JS · Kimi iOS Planner</div>
     <h1>Replit Deploy</h1>
     <div class="hero-strip"></div>
-    <p class="sub">oracle-ai · GitHub Actions
-      <span class="ai-badge">✦ Apple Intelligence</span>
-    </p>
+    <p class="sub">oracle-ai · GitHub Actions <span class="ai-badge">✦ Apple Intelligence</span></p>
   </header>
 
-  <!-- Server URL + Deploy Token -->
+  <!-- ── Server Selection ─────────────────────────────── -->
   <div class="card">
-    <label>Kimi API Server URL</label>
-    <input type="url" id="serverUrl"
-           placeholder="https://…replit.app/api"
-           autocorrect="off" autocapitalize="none"
-           spellcheck="false" inputmode="url"
-           data-gramm="false" data-enable-grammarly="false" />
+    <label>Backend Server</label>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-kimi" onclick="switchMode('kimi')">
+        ☁️ Kimi API<br/><span style="font-size:10px;opacity:.7;">Replit (primary)</span>
+      </button>
+      <button class="mode-tab" id="tab-oracle" onclick="switchMode('oracle')">
+        🤖 Oracle AI<br/><span style="font-size:10px;opacity:.7;">Local (fallback)</span>
+      </button>
+    </div>
 
-    <div style="margin-top:14px;">
-      <label>Deploy Token</label>
-      <div class="row">
-        <input type="password" id="deployToken"
-               placeholder="DEPLOY_SECRET value"
-               autocorrect="off" autocapitalize="none"
-               spellcheck="false" inputmode="text"
-               data-gramm="false" data-enable-grammarly="false"
-               style="flex:1;" />
-        <button class="icon-btn" onclick="toggleDT()" aria-label="Show/hide token">👁</button>
-      </div>
+    <!-- Kimi API panel -->
+    <div class="server-panel active" id="panel-kimi">
+      <label>Kimi API Server URL</label>
+      <input type="url" id="kimiUrl" placeholder="https://…replit.app/api"
+             autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
+             data-gramm="false" data-enable-grammarly="false" />
+      <span id="pill-kimi" class="server-pill"><span class="pill-dot" id="dot-kimi"></span><span id="txt-kimi">not checked</span></span>
+    </div>
+
+    <!-- Oracle AI panel -->
+    <div class="server-panel" id="panel-oracle">
+      <label>Oracle AI Server URL</label>
+      <input type="url" id="oracleUrl" placeholder="http://localhost:5000/api/deploy"
+             autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url"
+             data-gramm="false" data-enable-grammarly="false" />
+      <p class="hint">Run oracle-ai locally on your Mac — available even when Replit is offline.<br/>
+        Default: <span style="color:var(--accent)">http://localhost:5000/api/deploy</span></p>
+      <span id="pill-oracle" class="server-pill"><span class="pill-dot" id="dot-oracle"></span><span id="txt-oracle">not checked</span></span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Deploy token (shared between both servers) -->
+    <label>Deploy Token</label>
+    <div class="row">
+      <input type="password" id="deployToken" placeholder="DEPLOY_SECRET value"
+             autocorrect="off" autocapitalize="none" spellcheck="false"
+             data-gramm="false" data-enable-grammarly="false" style="flex:1;" />
+      <button class="icon-btn" onclick="toggleDT()" aria-label="Show/hide">👁</button>
     </div>
 
     <div class="row" style="margin-top:10px;">
-      <button class="small-btn" onclick="saveServer()">💾 Save</button>
-      <span style="font-size:11px;color:var(--muted);">Stored on-device · never sent to third parties</span>
+      <button class="small-btn" onclick="saveAll()">💾 Save</button>
+      <button class="small-btn" onclick="checkBothServers()">↻ Test</button>
     </div>
+    <p class="hint">Token is shared — both servers use the same DEPLOY_SECRET.</p>
   </div>
 
-  <!-- Source label -->
+  <!-- ── Source label ─────────────────────────────────── -->
   <div class="card">
-    <label>Workflow Source Label</label>
+    <label>Workflow Source</label>
     <select id="source">
       <option value="ios-trigger">ios-trigger</option>
+      <option value="oracle-ai-deploy">oracle-ai-deploy</option>
       <option value="replit-deploy">replit-deploy</option>
       <option value="m2m-launchd">m2m-launchd</option>
-      <option value="sandbox-release">sandbox-release</option>
     </select>
   </div>
 
-  <!-- Deploy button -->
-  <button class="deploy-btn" id="deployBtn" onclick="deploy()">
-    🚀 Deploy Now
-  </button>
+  <!-- ── Deploy button ─────────────────────────────────── -->
+  <button class="deploy-btn" id="deployBtn" onclick="deploy()">🚀 Deploy Now</button>
 
-  <!-- Status + log + run cards -->
+  <!-- ── Status + log ─────────────────────────────────── -->
   <div class="card" style="padding:14px;">
     <div class="status-row">
       <span class="status-dot" id="dot"></span>
       <span id="statusText">Ready</span>
       <button class="small-btn ml-auto" onclick="pollStatus()">↻ Refresh</button>
     </div>
-    <div id="log">Tap Deploy to trigger the workflow via the Kimi API server.</div>
+    <div id="log">Tap Deploy to trigger the workflow.</div>
     <div id="runs"></div>
   </div>
 
   <footer>
-    © 2026 Jonathan Sherman · S1AF · Sovereign ID: 1<br />
-    iOS 18 · Apple Intelligence · Swift 6<br />
-    <a class="link" href="https://github.com/jonathanEIDfounder/oracle-ai/actions" target="_blank">
-      View Actions ↗
-    </a>
+    © 2026 Jonathan Sherman · S1AF · Sovereign ID: 1<br/>
+    iOS 18 · Apple Intelligence · Swift 6<br/>
+    <a class="link" href="https://github.com/jonathanEIDfounder/oracle-ai/actions" target="_blank">View Actions ↗</a>
   </footer>
 
-  <script>
-  // ── iOS 18 feature detection ──────────────────────────────
-  const IS_IOS       = /iP(hone|ad|od)/.test(navigator.userAgent);
-  const IOS_VER      = IS_IOS ? parseFloat((navigator.userAgent.match(/OS (\d+)_/) || [])[1]) : 0;
-  const IS_STANDALONE= ('standalone' in navigator) && navigator.standalone;
+<script>
+// ── State ─────────────────────────────────────────────────────
+const IS_IOS     = /iP(hone|ad|od)/.test(navigator.userAgent);
+const IS_SA      = ('standalone' in navigator) && navigator.standalone;
+let activeMode   = localStorage.getItem("s1af_mode") || "kimi"; // kimi | oracle
 
-  // ── refs ──────────────────────────────────────────────────
-  const serverEl  = document.getElementById("serverUrl");
-  const tokenEl   = document.getElementById("deployToken");
-  const logEl     = document.getElementById("log");
-  const dot       = document.getElementById("dot");
-  const statusTxt = document.getElementById("statusText");
-  const runsEl    = document.getElementById("runs");
+// ── Refs ──────────────────────────────────────────────────────
+const kimiUrlEl   = document.getElementById("kimiUrl");
+const oracleUrlEl = document.getElementById("oracleUrl");
+const tokenEl     = document.getElementById("deployToken");
+const logEl       = document.getElementById("log");
+const dot         = document.getElementById("dot");
+const statusTxt   = document.getElementById("statusText");
+const runsEl      = document.getElementById("runs");
 
-  // ── Restore saved values ──────────────────────────────────
-  serverEl.value = localStorage.getItem("s1af_server") || "";
-  tokenEl.value  = localStorage.getItem("s1af_deploy_token") || "";
+// ── Restore ───────────────────────────────────────────────────
+kimiUrlEl.value   = localStorage.getItem("s1af_kimi_url")    || "";
+oracleUrlEl.value = localStorage.getItem("s1af_oracle_url")  || "http://localhost:5000/api/deploy";
+tokenEl.value     = localStorage.getItem("s1af_deploy_token")|| "";
+switchMode(activeMode, false);
 
-  function toggleDT() { tokenEl.type = tokenEl.type === "password" ? "text" : "password"; }
+// ── Mode switching ────────────────────────────────────────────
+function switchMode(mode, save = true) {
+  activeMode = mode;
+  if (save) localStorage.setItem("s1af_mode", mode);
+  document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".server-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("tab-" + mode).classList.add("active");
+  document.getElementById("panel-" + mode).classList.add("active");
+}
 
-  function saveServer() {
-    localStorage.setItem("s1af_server",       serverEl.value.trim());
-    localStorage.setItem("s1af_deploy_token", tokenEl.value.trim());
-    haptic("light");
-    logLine("✅ Saved — server URL and deploy token stored on device.", "ok");
+// ── Getters ───────────────────────────────────────────────────
+function getDeployToken() { return tokenEl.value.trim() || localStorage.getItem("s1af_deploy_token") || ""; }
+
+function getEndpoint(mode) {
+  if (mode === "kimi") {
+    const b = (kimiUrlEl.value.trim() || localStorage.getItem("s1af_kimi_url") || "").replace(/\/$/, "");
+    return b ? { trigger: `${b}/deploy/trigger`, status: `${b}/deploy/status`, health: `${b}/healthz` } : null;
   }
+  const b = (oracleUrlEl.value.trim() || localStorage.getItem("s1af_oracle_url") || "http://localhost:5000/api/deploy").replace(/\/$/, "");
+  return { trigger: `${b}/trigger`, status: `${b}/status`, health: `${b}/health` };
+}
 
-  function getBase()        { return (serverEl.value.trim() || localStorage.getItem("s1af_server") || "").replace(/\/$/, ""); }
-  function getDeployToken() { return tokenEl.value.trim()  || localStorage.getItem("s1af_deploy_token") || ""; }
+// ── Save ──────────────────────────────────────────────────────
+function saveAll() {
+  localStorage.setItem("s1af_kimi_url",     kimiUrlEl.value.trim());
+  localStorage.setItem("s1af_oracle_url",   oracleUrlEl.value.trim());
+  localStorage.setItem("s1af_deploy_token", tokenEl.value.trim());
+  haptic("light");
+  logLine("✅ Saved.", "ok");
+}
 
-  // ── iOS 18 Haptic feedback ────────────────────────────────
-  // Uses Vibration API where available; on iOS 18 this maps to
-  // UIImpactFeedbackGenerator internally for PWAs.
-  function haptic(type = "medium") {
-    if (!navigator.vibrate) return;
-    const map = { light: [10], medium: [20], heavy: [30], success: [10,50,10], error: [30,20,30] };
-    navigator.vibrate(map[type] || map.medium);
+// ── Visibility toggle ─────────────────────────────────────────
+function toggleDT() { tokenEl.type = tokenEl.type === "password" ? "text" : "password"; }
+
+// ── Haptics ───────────────────────────────────────────────────
+function haptic(t="medium") {
+  if (!navigator.vibrate) return;
+  ({light:[10],medium:[20],heavy:[30],success:[10,50,10],error:[30,20,30]})[t]
+    ?.forEach?.(v => navigator.vibrate(v));
+}
+
+// ── Log helpers ───────────────────────────────────────────────
+function clearLog() { logEl.textContent = ""; }
+function logLine(msg, cls="") {
+  const s = document.createElement("span");
+  if (cls) s.className = "log-" + cls;
+  s.textContent = msg + "\n";
+  logEl.appendChild(s);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(state, text) {
+  dot.className = "status-dot " + state;
+  statusTxt.textContent = text;
+}
+
+// ── Server health check ───────────────────────────────────────
+async function checkServer(mode) {
+  const ep = getEndpoint(mode);
+  const dotEl = document.getElementById("dot-" + mode);
+  const txtEl = document.getElementById("txt-" + mode);
+  if (!ep) { dotEl.className="pill-dot err"; txtEl.textContent="no URL set"; return false; }
+  dotEl.className = "pill-dot checking"; txtEl.textContent = "checking…";
+  try {
+    const tok = getDeployToken();
+    const r   = await fetch(ep.health, {
+      headers: tok ? { "X-Deploy-Token": tok } : {},
+      signal: AbortSignal.timeout(5000)
+    });
+    const ok = r.status < 500;
+    dotEl.className = "pill-dot " + (ok ? "ok" : "err");
+    txtEl.textContent = ok ? `online (HTTP ${r.status})` : `error ${r.status}`;
+    return ok;
+  } catch (e) {
+    dotEl.className = "pill-dot err";
+    txtEl.textContent = e.name === "TimeoutError" ? "timeout" : "offline";
+    return false;
   }
+}
 
-  // ── Log helpers ───────────────────────────────────────────
-  function clearLog() { logEl.textContent = ""; }
-  function logLine(msg, cls = "") {
-    const s = document.createElement("span");
-    if (cls) s.className = "log-" + cls;
-    s.textContent = msg + "\n";
-    logEl.appendChild(s);
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-  function setStatus(state, text) {
-    dot.className = "status-dot " + state;
-    statusTxt.textContent = text;
-  }
+function checkBothServers() {
+  checkServer("kimi");
+  checkServer("oracle");
+}
 
-  // ── Run card helpers ──────────────────────────────────────
-  function badgeClass(r) {
-    if (r.status === "completed") return "badge-" + (r.conclusion || "cancelled");
-    if (r.status === "in_progress") return "badge-in_progress";
-    return "badge-queued";
-  }
-  function badgeLabel(r) { return r.status === "completed" ? (r.conclusion || "done") : r.status; }
+// ── Run cards ─────────────────────────────────────────────────
+function badgeClass(r) {
+  if (r.status==="completed") return "badge-"+(r.conclusion||"cancelled");
+  if (r.status==="in_progress") return "badge-in_progress";
+  return "badge-queued";
+}
+function badgeLabel(r) { return r.status==="completed"?(r.conclusion||"done"):r.status; }
 
-  // ── Status polling ────────────────────────────────────────
-  let pollTimer = null;
+// ── Status polling ────────────────────────────────────────────
+let pollTimer = null;
 
-  async function pollStatus() {
-    const base = getBase(), tok = getDeployToken();
-    if (!base) return;
-    try {
-      const res  = await fetch(`${base}/deploy/status`, {
-        headers: { "X-Deploy-Token": tok }
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data.ok || !data.runs?.length) { runsEl.innerHTML = ""; return; }
+async function pollStatus() {
+  const ep  = getEndpoint(activeMode);
+  const tok = getDeployToken();
+  if (!ep || !tok) return;
+  try {
+    const res  = await fetch(ep.status, { headers: { "X-Deploy-Token": tok } });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.ok || !data.runs?.length) { runsEl.innerHTML = ""; return; }
+    runsEl.innerHTML = data.runs.slice(0,3).map(r=>`
+      <div class="run-card">
+        <div style="min-width:0;flex:1;">
+          <div class="run-name"><a class="link" href="${r.url}" target="_blank">${r.name}</a></div>
+          <div class="run-time">${(r.created_at||"").slice(0,16).replace("T"," ")} UTC
+            ${data.server ? `· <span style="color:var(--accent)">${data.server}</span>` : ""}</div>
+        </div>
+        <span class="run-badge ${badgeClass(r)}">${badgeLabel(r)}</span>
+      </div>`).join("");
+    const allDone = data.runs.every(r=>r.status==="completed");
+    if (allDone && pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+  } catch { /* silent */ }
+}
 
-      runsEl.innerHTML = data.runs.slice(0, 3).map(r => `
-        <div class="run-card">
-          <div style="min-width:0;flex:1;">
-            <div class="run-name">
-              <a class="link" href="${r.url}" target="_blank">${r.name}</a>
-            </div>
-            <div class="run-time">${(r.created_at||"").slice(0,16).replace("T"," ")} UTC</div>
-          </div>
-          <span class="run-badge ${badgeClass(r)}">${badgeLabel(r)}</span>
-        </div>`).join("");
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollStatus();
+  pollTimer = setInterval(pollStatus, 6000);
+}
 
-      const allDone = data.runs.every(r => r.status === "completed");
-      if (allDone && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    } catch { /* server offline or CORS — silent */ }
-  }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+  else if (!document.hidden) pollStatus();
+});
 
-  function startPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    pollStatus();
-    pollTimer = setInterval(pollStatus, 6000);
-  }
+// ── Deploy ────────────────────────────────────────────────────
+async function deploy() {
+  const ep     = getEndpoint(activeMode);
+  const dtoken = getDeployToken();
+  const source = document.getElementById("source").value;
+  const btn    = document.getElementById("deployBtn");
 
-  // ── iOS 18: use Beacon API on page-hide for clean teardown ─
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    if (!document.hidden && getBase()) pollStatus();
-  });
+  if (!ep)     { haptic("error"); logLine("❌  Set the server URL first.", "err"); return; }
+  if (!dtoken) { haptic("error"); logLine("❌  Set the Deploy Token first.", "err"); return; }
 
-  // ── Deploy ────────────────────────────────────────────────
-  async function deploy() {
-    const base   = getBase();
-    const dtoken = getDeployToken();
-    const source = document.getElementById("source").value;
-    const btn    = document.getElementById("deployBtn");
+  btn.disabled = true; btn.textContent = "⏳ Deploying…"; btn.className = "deploy-btn";
+  clearLog(); runsEl.innerHTML = "";
+  setStatus("spin", `Connecting to ${activeMode === "kimi" ? "Kimi API" : "Oracle AI"}…`);
+  haptic("medium");
 
-    if (!base)   { haptic("error"); logLine("❌  Set the Kimi API Server URL first.", "err"); return; }
-    if (!dtoken) { haptic("error"); logLine("❌  Set the Deploy Token first.", "err"); return; }
+  try {
+    logLine(`[1/2] Reaching ${activeMode === "kimi" ? "Kimi API" : "Oracle AI"} server…`, "info");
+    const hRes = await fetch(ep.health, {
+      headers: dtoken ? { "X-Deploy-Token": dtoken } : {},
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!hRes.ok && hRes.status >= 500) throw new Error(`Server error (HTTP ${hRes.status})`);
+    logLine(`      ✅  Server online (HTTP ${hRes.status})`, "ok");
 
-    btn.disabled = true;
-    btn.textContent = "⏳ Deploying…";
-    btn.className = "deploy-btn";
-    clearLog();
-    runsEl.innerHTML = "";
-    setStatus("spin", "Connecting…");
-    haptic("medium");
+    logLine("[2/2] Dispatching workflow…", "info");
+    const dRes  = await fetch(ep.trigger, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Deploy-Token": dtoken },
+      body: JSON.stringify({ source }),
+      signal: AbortSignal.timeout(12000)
+    });
+    const dData = await dRes.json();
+    if (!dData.ok) throw new Error(dData.error || `Server returned ${dRes.status}`);
 
-    try {
-      // 1 — Health check
-      logLine("[1/2] Reaching Kimi API server…", "info");
-      const hRes = await fetch(`${base}/healthz`);
-      if (!hRes.ok) throw new Error(`Server unreachable (HTTP ${hRes.status})`);
-      logLine("      ✅  Kimi API online", "ok");
+    logLine(`      ✅  ${dData.message}`, "ok");
+    if (dData.server) logLine(`      🤖  Via: ${dData.server}`, "info");
+    logLine(`      🔗  ${dData.actionsUrl}`, "info");
 
-      // 2 — Dispatch via server (GITHUB_PAT stays server-side)
-      logLine("[2/2] Dispatching workflow via server…", "info");
-      const dRes  = await fetch(`${base}/deploy/trigger`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Deploy-Token": dtoken },
-        body: JSON.stringify({ source })
-      });
-      const dData = await dRes.json();
-      if (!dData.ok) throw new Error(dData.error || `Server returned ${dRes.status}`);
+    haptic("success");
+    setStatus("ok", "Deployed — polling…");
+    btn.textContent = "✅ Deployed"; btn.className = "deploy-btn success";
+    startPolling();
+  } catch (err) {
+    haptic("error");
+    logLine("❌  " + err.message, "err");
 
-      logLine("      ✅  " + dData.message, "ok");
-      logLine(`      🔗  ${dData.actionsUrl}`, "info");
-
-      haptic("success");
-      setStatus("ok", "Deployed — polling status…");
-      btn.textContent = "✅ Deployed";
-      btn.className = "deploy-btn success";
-      startPolling();
-
-    } catch (err) {
-      haptic("error");
-      logLine("❌  " + err.message, "err");
-      setStatus("err", "Failed");
-      btn.textContent = "❌ Failed — tap to retry";
-      btn.className = "deploy-btn failure";
-      btn.disabled = false;
-      return;
+    // Auto-switch to other server if current one failed
+    if (activeMode === "kimi") {
+      logLine("↩  Kimi API unreachable — switch to Oracle AI tab to use local server.", "warn");
     }
 
-    // Re-enable after 8s
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = "🚀 Deploy Now";
-      btn.className = "deploy-btn";
-    }, 8000);
+    setStatus("err", "Failed");
+    btn.textContent = "❌ Failed — tap to retry"; btn.className = "deploy-btn failure";
+    btn.disabled = false;
+    return;
   }
 
-  // ── Auto-poll on load if already configured ───────────────
-  if (getBase() && getDeployToken()) pollStatus();
+  setTimeout(() => {
+    btn.disabled = false; btn.textContent = "🚀 Deploy Now"; btn.className = "deploy-btn";
+  }, 8000);
+}
 
-  // ── iOS 18 PWA install prompt log ────────────────────────
-  if (IS_IOS && !IS_STANDALONE) {
-    logLine(`ℹ️  iOS ${IOS_VER} — add to Home Screen for full PWA experience.`, "info");
-  }
-  </script>
+// ── Init ──────────────────────────────────────────────────────
+if (getDeployToken()) checkBothServers();
+if (IS_IOS && !IS_SA) logLine("ℹ️  Add to Home Screen for full PWA experience.", "info");
+</script>
 </body>
 </html>
