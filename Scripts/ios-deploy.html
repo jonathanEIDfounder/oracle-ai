@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="S1AF Deploy" />
+  <title>S1AF Deploy</title>
+  <style>
+    :root {
+      --bg:      #0a0e1a;
+      --card:    #111827;
+      --border:  #1e2d45;
+      --accent:  #3b82f6;
+      --green:   #22c55e;
+      --red:     #ef4444;
+      --yellow:  #f59e0b;
+      --text:    #f1f5f9;
+      --muted:   #64748b;
+      --mono:    'SF Mono', ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      min-height: 100dvh;
+      padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 16px)
+               env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 16px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      padding-top: 12px;
+      text-align: center;
+    }
+    header .logo {
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-family: var(--mono);
+      margin-bottom: 6px;
+    }
+    header h1 { font-size: 26px; font-weight: 700; }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type="password"], input[type="text"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: var(--mono);
+      padding: 12px 14px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    .token-row { display: flex; gap: 8px; }
+    .token-row input { flex: 1; }
+    .icon-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 18px;
+      width: 46px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    .deploy-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 16px;
+      padding: 18px;
+      cursor: pointer;
+      transition: opacity .15s;
+      letter-spacing: .02em;
+    }
+    .deploy-btn:active  { opacity: .75; }
+    .deploy-btn:disabled { opacity: .4; cursor: default; }
+    .deploy-btn.success { background: var(--green); }
+    .deploy-btn.failure { background: var(--red); }
+
+    #log {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      min-height: 80px;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .log-ok   { color: var(--green); }
+    .log-err  { color: var(--red); }
+    .log-info { color: var(--accent); }
+    .log-warn { color: var(--yellow); }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .status-dot.ok   { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.err  { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+    .status-dot.spin { background: var(--accent); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .row { display: flex; align-items: center; gap: 8px; }
+    .row span { font-size: 13px; color: var(--muted); }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--border);
+      padding-bottom: 8px;
+    }
+    .link { color: var(--accent); text-decoration: none; }
+
+    .section-title {
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .step-list { display: flex; flex-direction: column; gap: 6px; }
+    .step { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); }
+    .step-num {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-family: var(--mono);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">S1AF v1.0.0-JS · Jonathan Sherman</div>
+    <h1>Replit Deploy</h1>
+    <p>oracle-ai · GitHub Actions · iOS</p>
+  </header>
+
+  <!-- Token -->
+  <div class="card">
+    <label>GitHub Personal Access Token</label>
+    <div class="token-row">
+      <input type="password" id="pat" placeholder="ghp_…" autocomplete="off"
+             autocorrect="off" autocapitalize="none" spellcheck="false"
+             data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" />
+      <button class="icon-btn" onclick="togglePat()" title="Show/hide">👁</button>
+    </div>
+    <div style="margin-top:10px; display:flex; gap:8px;">
+      <button class="icon-btn" style="width:auto;padding:0 14px;font-size:13px;color:var(--text);"
+              onclick="saveToken()">💾 Save</button>
+      <button class="icon-btn" style="width:auto;padding:0 14px;font-size:13px;color:var(--red);"
+              onclick="clearToken()">🗑 Clear</button>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="card">
+    <label>Workflow Source Label</label>
+    <select id="source">
+      <option value="replit-deploy">replit-deploy</option>
+      <option value="sandbox-bridge">sandbox-bridge</option>
+      <option value="sandbox-release">sandbox-release (tags release)</option>
+      <option value="ios-trigger">ios-trigger</option>
+    </select>
+  </div>
+
+  <!-- Deploy button -->
+  <button class="deploy-btn" id="deployBtn" onclick="deploy()">
+    🚀 Deploy Now
+  </button>
+
+  <!-- Log -->
+  <div class="card" style="padding:12px;">
+    <div class="row" style="margin-bottom:8px;">
+      <span class="status-dot" id="dot"></span>
+      <span id="statusText" style="font-size:12px;">Ready</span>
+    </div>
+    <div id="log">Tap Deploy to trigger the S1AF Sandbox Bridge workflow.</div>
+  </div>
+
+  <!-- How it works -->
+  <div class="card">
+    <div class="section-title">What this does</div>
+    <div class="step-list">
+      <div class="step"><div class="step-num">1</div><span>Verifies your token against the GitHub API</span></div>
+      <div class="step"><div class="step-num">2</div><span>Dispatches the self-trigger.yml workflow on <strong>oracle-ai / main</strong></span></div>
+      <div class="step"><div class="step-num">3</div><span>Opens the Actions tab so you can watch the run live</span></div>
+    </div>
+  </div>
+
+  <footer>
+    (c) 2026 Jonathan Sherman · S1AF · Sovereign ID: 1<br/>
+    <a class="link" href="https://github.com/jonathanEIDfounder/oracle-ai/actions" target="_blank">
+      View Actions →
+    </a>
+  </footer>
+
+  <script>
+    const OWNER  = "jonathanEIDfounder";
+    const REPO   = "oracle-ai";
+    const WF     = "self-trigger.yml";
+    const BRANCH = "main";
+    const API    = `https://api.github.com/repos/${OWNER}/${REPO}`;
+
+    // ── token persistence ────────────────────────────────────
+    const patInput = document.getElementById("pat");
+    const saved = localStorage.getItem("s1af_pat");
+    if (saved) patInput.value = saved;
+
+    function togglePat() {
+      patInput.type = patInput.type === "password" ? "text" : "password";
+    }
+    function saveToken() {
+      localStorage.setItem("s1af_pat", patInput.value.trim());
+      logLine("✅ Token saved to device storage.", "ok");
+    }
+    function clearToken() {
+      localStorage.removeItem("s1af_pat");
+      patInput.value = "";
+      logLine("🗑 Token cleared.", "warn");
+    }
+
+    // ── log helpers ──────────────────────────────────────────
+    const logEl      = document.getElementById("log");
+    const dot        = document.getElementById("dot");
+    const statusText = document.getElementById("statusText");
+
+    function clearLog() { logEl.textContent = ""; }
+    function logLine(msg, cls = "") {
+      const line = document.createElement("span");
+      if (cls) line.className = "log-" + cls;
+      line.textContent = msg + "\n";
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function setStatus(state, text) {
+      dot.className = "status-dot " + state;
+      statusText.textContent = text;
+    }
+
+    // ── deploy ───────────────────────────────────────────────
+    async function deploy() {
+      const pat    = patInput.value.trim();
+      const source = document.getElementById("source").value;
+      const btn    = document.getElementById("deployBtn");
+
+      if (!pat) {
+        logLine("❌  Paste your GitHub PAT first.", "err");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "⏳ Deploying…";
+      btn.className = "deploy-btn";
+      clearLog();
+      setStatus("spin", "Connecting…");
+
+      const headers = {
+        "Authorization": `token ${pat}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      };
+
+      try {
+        // Step 1 — verify token
+        logLine("[1/3] Verifying token…", "info");
+        const userRes = await fetch("https://api.github.com/user", { headers });
+        if (!userRes.ok) throw new Error(`Token invalid (HTTP ${userRes.status})`);
+        const user = await userRes.json();
+        logLine(`      ✅  Authenticated as: ${user.login}`, "ok");
+
+        // Step 2 — dispatch workflow
+        logLine(`[2/3] Dispatching workflow (source: ${source})…`, "info");
+        const dispatchRes = await fetch(
+          `${API}/actions/workflows/${WF}/dispatches`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ ref: BRANCH, inputs: { source } })
+          }
+        );
+        if (dispatchRes.status !== 204) {
+          const body = await dispatchRes.text();
+          throw new Error(`Dispatch failed (HTTP ${dispatchRes.status}): ${body}`);
+        }
+        logLine("      ✅  Workflow triggered on oracle-ai / main", "ok");
+
+        // Step 3 — open Actions
+        logLine("[3/3] Opening Actions tab…", "info");
+        const actionsUrl = `https://github.com/${OWNER}/${REPO}/actions`;
+        setTimeout(() => window.open(actionsUrl, "_blank"), 800);
+        logLine(`      ✅  ${actionsUrl}`, "ok");
+
+        setStatus("ok", "Deploy triggered");
+        btn.textContent = "✅ Deployed";
+        btn.className = "deploy-btn success";
+
+      } catch (err) {
+        logLine("❌  " + err.message, "err");
+        setStatus("err", "Failed");
+        btn.textContent = "❌ Failed — Tap to retry";
+        btn.className = "deploy-btn failure";
+        btn.disabled = false;
+        return;
+      }
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "🚀 Deploy Now";
+        btn.className = "deploy-btn";
+        setStatus("", "Ready");
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
