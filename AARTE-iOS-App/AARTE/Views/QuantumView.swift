@@ -125,7 +125,14 @@ final class QuantumViewModel: ObservableObject {
           lastJobId    = score.quantumJobId
           jobStatus    = .completed
           isVerifying  = false
+          // Broadcast score to AARTEStatusCard on the Home tab
+          NotificationCenter.default.post(
+            name: .aarteSscoreUpdated,
+            object: score.hybridScore
+          )
         }
+        // Submit score to API server so requireSovereign enforces it
+        await submitScoreToServer(score)
       } catch {
         await MainActor.run {
           errorMessage = error.localizedDescription
@@ -134,6 +141,41 @@ final class QuantumViewModel: ObservableObject {
         }
       }
     }
+  }
+
+  // ── Submit score to the API server ───────────────────────────────────────
+  // Fires after every successful verification so requireSovereign can enforce
+  // the behavioral decision on subsequent requests.
+  private func submitScoreToServer(_ score: HybridScore) async {
+    // The sovereign JWT must be stored somewhere accessible; for now we read
+    // it from UserDefaults (set by BiometricAuthManager after Face ID auth).
+    guard let jwt = UserDefaults.standard.string(forKey: "s1af.sovereign.jwt"),
+          !jwt.isEmpty,
+          let url = URL(string: "https://\(apiHost)/api/aarte/session-score")
+    else { return }
+
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.setValue("Bearer \(jwt)",    forHTTPHeaderField: "Authorization")
+
+    let body: [String: Any] = [
+      "hybridScore": score.hybridScore,
+      "classical":   score.classicalScore,
+      "quantum":     score.quantumScore,
+      "backend":     score.quantumBackend?.rawValue ?? "",
+      "jobId":       score.quantumJobId as Any,
+    ]
+    req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+    _ = try? await URLSession.shared.data(for: req)
+  }
+
+  private var apiHost: String {
+    // Reads the Replit dev domain from the app bundle if available,
+    // otherwise falls back to localhost for simulator.
+    Bundle.main.object(forInfoDictionaryKey: "S1AFApiHost") as? String
+      ?? "localhost:8080"
   }
 
   func runEnrollment() {
