@@ -189,20 +189,40 @@ router.get("/status", requireDeployToken, async (_req: Request, res: Response) =
 // ── GET /api/deploy/config  (no auth — safe for page-load probe) ─
 
 router.get("/config", async (_req: Request, res: Response) => {
-  const hasPAT    = !!resolvePAT();
+  const pat       = resolvePAT();
   const hasSecret = !!(process.env.DEPLOY_SECRET?.length);
   const ds        = process.env.DEPLOY_SECRET ?? "";
+
+  // Live-validate the PAT against GitHub /user
+  let ghValid = false, ghLogin: string | undefined, ghScopes: string[] = [], ghErr: string | undefined;
+  if (pat) {
+    try {
+      const r = await fetch("https://api.github.com/user", {
+        headers: { Authorization: `token ${pat}`, Accept: "application/vnd.github+json" },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (r.status === 200) {
+        const d = await r.json() as any;
+        ghValid  = true;
+        ghLogin  = d.login;
+        const sh = r.headers.get("x-oauth-scopes") ?? "";
+        ghScopes = sh ? sh.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+      } else {
+        ghErr = `GitHub ${r.status}`;
+      }
+    } catch (e: any) { ghErr = e.message; }
+  } else { ghErr = "GITHUB_PAT not set"; }
+
+  const obfDs = ds
+    ? ds.slice(0, 2) + "•".repeat(Math.max(4, ds.length - 4)) + ds.slice(-2)
+    : undefined;
+
   res.json({
-    ok:     hasPAT && hasSecret,
+    ok:     ghValid && hasSecret,
     server: "oracle-ai",
     fields: {
-      GITHUB_PAT:    { ok: hasPAT,    source: hasPAT ? "env" : undefined },
-      DEPLOY_SECRET: {
-        ok: hasSecret,
-        obfuscated: ds
-          ? ds.slice(0, 2) + "•".repeat(Math.max(4, ds.length - 4)) + ds.slice(-2)
-          : undefined,
-      },
+      GITHUB_PAT:    { ok: ghValid, source: "env", login: ghLogin, scopes: ghScopes, error: ghErr },
+      DEPLOY_SECRET: { ok: hasSecret, obfuscated: obfDs },
     },
     actionsUrl: `https://github.com/${OWNER}/${REPO}/actions`,
   });
