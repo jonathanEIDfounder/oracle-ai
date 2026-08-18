@@ -175,4 +175,133 @@ router.get("/health", (_req: Request, res: Response) => {
   });
 });
 
+// ── POST /api/deploy/setup-workflow ─────────────────────────
+// One-time setup: pushes self-trigger.yml to the repo using the
+// server's own GITHUB_PERSONAL_ACCESS_TOKEN (which has workflow scope).
+// Call this once from Mac while oracle-ai is running locally.
+// Replit's connector cannot do this (no workflow OAuth scope).
+
+const WORKFLOW_YAML = `# =============================================================
+# self-trigger.yml
+# Author: Jonathan Sherman
+# Copyright: (c) 2026 Jonathan Sherman. All Rights Reserved.
+# Framework: S1AF v1.0.0-JS
+# Sovereign ID: 1
+# =============================================================
+
+name: S1AF Sandbox Bridge
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Trigger source'
+        required: true
+        default: 'sandbox-bridge'
+      payload:
+        description: 'Optional payload JSON'
+        required: false
+        default: '{}'
+
+jobs:
+  bridge:
+    name: Bridge from Sandbox
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: \${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify AARTE Lock
+        run: |
+          echo "[S1AF] Jonathan Sherman: Verifying AARTE lock..."
+          if ! grep -q "AARTE-LOCK:097162266cf833debbad30cedd5189ac:SOVEREIGN:1" Sources/App/AARTEApp.swift; then
+            echo "⚠️  AARTE lock file not present — skipping (may be a non-Swift repo)"
+          else
+            echo "✅ AARTE lock verified — Sovereign ID: 1"
+          fi
+
+      - name: Sync with Sandbox
+        run: |
+          echo "[S1AF] Bridge activated from \${{ github.event.inputs.source }}"
+          echo "Timestamp: \$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Trigger: \${{ github.event.inputs.source }}"
+          echo "Actor: \${{ github.actor }}"
+
+      - name: Tag Release if Needed
+        if: github.event.inputs.source == 'sandbox-release'
+        run: |
+          git config user.name "Jonathan Sherman"
+          git config user.email "jonathan@sentient.dev"
+          git tag "v\$(date +%Y.%m.%d-%H%M)"
+          git push origin --tags
+
+      - name: Notify
+        run: |
+          echo "✅ S1AF Bridge complete"
+          echo "Run URL: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}"
+`;
+
+router.post("/setup-workflow", requireDeployToken, async (_req: Request, res: Response) => {
+  const pat = resolvePAT();
+  if (!pat) {
+    res.status(503).json({
+      error: "GitHub PAT not configured — set GITHUB_PERSONAL_ACCESS_TOKEN on oracle-ai server",
+      server: "oracle-ai",
+    });
+    return;
+  }
+
+  const fp      = `.github/workflows/${WF}`;
+  const b64     = Buffer.from(WORKFLOW_YAML, "utf8").toString("base64");
+  const headers = ghHeaders(pat);
+
+  try {
+    // Check if the file already exists (need sha to update)
+    const checkRes  = await fetch(`${GH_API}/repos/${OWNER}/${REPO}/contents/${fp}?ref=${BRANCH}`, { headers });
+    const checkData = checkRes.ok ? await checkRes.json() as any : null;
+    const sha       = checkData?.sha;
+
+    const body: Record<string, string> = {
+      message: "[S1AF] setup: add self-trigger workflow — Jonathan Sherman",
+      content: b64,
+      branch:  BRANCH,
+    };
+    if (sha) body.sha = sha;
+
+    const putRes = await fetch(`${GH_API}/repos/${OWNER}/${REPO}/contents/${fp}`, {
+      method:  "PUT",
+      headers,
+      body:    JSON.stringify(body),
+    });
+
+    if (putRes.status === 200 || putRes.status === 201) {
+      const data = await putRes.json() as any;
+      res.json({
+        ok:        true,
+        action:    sha ? "updated" : "created",
+        sha:       data.content?.sha,
+        path:      fp,
+        viewUrl:   `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${fp}`,
+        actionsUrl:`https://github.com/${OWNER}/${REPO}/actions`,
+        server:    "oracle-ai",
+      });
+      return;
+    }
+
+    const errText = await putRes.text();
+    res.status(putRes.status).json({
+      ok: false, error: errText,
+      hint: putRes.status === 403
+        ? "PAT needs 'workflow' scope — update GITHUB_PERSONAL_ACCESS_TOKEN"
+        : undefined,
+      server: "oracle-ai",
+    });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err.message, server: "oracle-ai" });
+  }
+});
+
 export default router;
