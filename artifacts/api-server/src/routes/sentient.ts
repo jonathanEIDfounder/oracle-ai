@@ -347,6 +347,39 @@ router.post("/sentient/seal-env", async (_req, res) => {
   }
 });
 
+// ── POST /api/sentient/create-release ────────────────────────────────────────
+// Creates a GitHub release and uploads the Xcode ZIP as an asset.
+// Requires X-Deploy-Secret header matching the sealed deploy secret.
+router.post("/sentient/create-release", async (req, res) => {
+  const secret = (req.headers["x-deploy-secret"] as string | undefined)?.trim();
+  const expected = CONFIG.deploySecret ?? process.env.DEPLOY_SECRET ?? "";
+  if (!secret || secret !== expected) {
+    res.status(403).json({ ok: false, error: "X-Deploy-Secret missing or invalid" });
+    return;
+  }
+
+  const { version = "", commit = "HEAD" } = req.body as { version?: string; commit?: string };
+
+  try {
+    const { execFile } = await import("child_process");
+    const { promisify } = await import("util");
+    const { join } = await import("path");
+    const execAsync = promisify(execFile);
+    const releaseScript = join(process.cwd(), "..", "..", "scripts", "create-release.mjs");
+
+    const { stdout } = await execAsync("node", [releaseScript, version, commit], {
+      timeout: 60_000,
+    });
+
+    const result = JSON.parse(stdout.trim());
+    logger.info({ version, result }, "sentient/create-release: complete");
+    res.json(result);
+  } catch (err) {
+    logger.warn({ err }, "sentient/create-release: failed");
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 // ── POST /api/sentient/git-push ───────────────────────────────────────────────
 // Pushes pending files to oracle-ai/main via the Replit GitHub integration.
 // No PAT required — uses the connector's OAuth token (repo scope confirmed).
