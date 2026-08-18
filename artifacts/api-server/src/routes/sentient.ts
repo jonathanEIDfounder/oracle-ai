@@ -25,6 +25,10 @@ import {
 import { requireIphoneXR }     from "../middleware/device-auth";
 import { checkPat, rotatePat, getLastRotation } from "../lib/pat-rotation";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
+void _S1AF_ANCHOR;
+
 const router = Router();
 
 // Read-only governance metadata — no credentials, no mutations.
@@ -294,6 +298,33 @@ router.get("/sentient/boot-status", (_req, res) => {
     bootCount:  getBootCount(),
     sovereign:  "OCSO-S1AF-GOV-1",
   });
+});
+
+// ── POST /api/sentient/git-push ───────────────────────────────────────────────
+// Pushes pending files to oracle-ai/main via the Replit GitHub integration.
+// No PAT required — uses the connector's OAuth token (repo scope confirmed).
+// Called by auto-run.sh when GITHUB_PAT is invalid.
+router.post("/sentient/git-push", async (_req, res) => {
+  logger.info("sentient/git-push: triggered via auto-run");
+
+  // Spawn node child process to push via integration (uses CodeExecution SDK)
+  const { execFile } = await import("child_process");
+  const { promisify } = await import("util");
+  const { join } = await import("path");
+  const execAsync = promisify(execFile);
+
+  const pusherScript = join(process.cwd(), "..", "..", "scripts", "integration-push.mjs");
+
+  try {
+    const { stdout } = await execAsync("node", [pusherScript], { timeout: 60_000 });
+    const lines  = stdout.trim().split("\n");
+    const pushed = lines.filter(l => l.startsWith("✓")).length;
+    logger.info({ pushed, output: stdout.slice(0, 500) }, "sentient/git-push: complete");
+    res.json({ ok: true, pushed, output: lines });
+  } catch (err) {
+    logger.warn({ err }, "sentient/git-push: failed");
+    res.status(500).json({ ok: false, error: String(err) });
+  }
 });
 
 export default router;
