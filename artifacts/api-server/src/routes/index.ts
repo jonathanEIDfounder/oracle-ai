@@ -25,6 +25,7 @@ import formulaRouter        from "./formula";
 import automateRouter       from "./automate";
 import transformRouter      from "./transform";
 import assetsRouter         from "./assets";
+import aarteRouter          from "./aarte";
 import { requireSovereign } from "../middleware/require-sovereign";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
@@ -37,6 +38,7 @@ const router: IRouter = Router();
 router.use(healthRouter);   // /healthz — no auth
 router.use(authRouter);        // /auth/*               — no auth (issues the token)
 router.use("/auth", authDeviceRouter); // /auth/github-device/* — no auth (bootstrap)
+router.use(aarteRouter);       // /aarte/*              — pure analysis, no secrets
 
 // ── Sovereign gate — all routes below require biometric JWT ───────
 router.use(requireSovereign);
