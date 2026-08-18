@@ -4,7 +4,7 @@
 # Makefile — Oracle-AI project automation
 # =============================================================================
 
-.PHONY: kimi-xcode generate push run clean status
+.PHONY: kimi-xcode generate push run clean status tokens
 
 # ── Primary targets ───────────────────────────────────────────────────────────
 
@@ -39,6 +39,14 @@ status:
 clean:
 	@rm -rf Oracle-AI-Kimi-Xcode/ build-output/
 	@echo "Cleaned."
+
+## Quick one-command credential input (run in Shell tab)
+auth:
+	@bash scripts/quick-auth.sh
+
+## Acquire + seal real credentials (GitHub device flow + Moonshot stdin)
+tokens:
+	@bash scripts/get-tokens.sh
 
 ## Embed authorship in all source files
 stamp:
