@@ -86,6 +86,7 @@ router.post("/trigger", requireDeployToken, async (req: Request, res: Response) 
     res.status(503).json({
       error: "GitHub PAT not configured on oracle-ai server",
       hint: "Set GITHUB_PERSONAL_ACCESS_TOKEN or GITHUB_PAT env var",
+      field: "GITHUB_PAT",
       server: "oracle-ai",
     });
     return;
@@ -115,12 +116,36 @@ router.post("/trigger", requireDeployToken, async (req: Request, res: Response) 
       return;
     }
 
+    // Workflow file not found — auto-setup and retry once
+    if (ghRes.status === 422) {
+      const errText = await ghRes.text();
+      if (errText.includes("workflow") || errText.includes("not found")) {
+        const setupResult = await autoSetupWorkflow(pat);
+        if (setupResult.ok) {
+          // Retry dispatch after setup
+          const retry = await fetch(
+            `${GH_API}/repos/${OWNER}/${REPO}/actions/workflows/${WF}/dispatches`,
+            { method: "POST", headers: ghHeaders(pat), body: JSON.stringify({ ref: BRANCH, inputs: { source } }) }
+          );
+          if (retry.status === 204) {
+            res.json({
+              ok: true,
+              message: "Workflow auto-setup and dispatched",
+              autoSetup: true,
+              source,
+              actionsUrl: `https://github.com/${OWNER}/${REPO}/actions`,
+              server: "oracle-ai",
+            });
+            return;
+          }
+        }
+        res.status(422).json({ ok: false, error: "Workflow file missing — auto-setup failed", autoSetup: setupResult, server: "oracle-ai" });
+        return;
+      }
+    }
+
     const body = await ghRes.text();
-    res.status(ghRes.status).json({
-      ok: false,
-      error: body,
-      server: "oracle-ai",
-    });
+    res.status(ghRes.status).json({ ok: false, error: body, server: "oracle-ai" });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err.message, server: "oracle-ai" });
   }
@@ -160,6 +185,53 @@ router.get("/status", requireDeployToken, async (_req: Request, res: Response) =
     res.status(500).json({ ok: false, error: err.message, server: "oracle-ai" });
   }
 });
+
+// ── GET /api/deploy/config  (no auth — safe for page-load probe) ─
+
+router.get("/config", async (_req: Request, res: Response) => {
+  const hasPAT    = !!resolvePAT();
+  const hasSecret = !!(process.env.DEPLOY_SECRET?.length);
+  const ds        = process.env.DEPLOY_SECRET ?? "";
+  res.json({
+    ok:     hasPAT && hasSecret,
+    server: "oracle-ai",
+    fields: {
+      GITHUB_PAT:    { ok: hasPAT,    source: hasPAT ? "env" : undefined },
+      DEPLOY_SECRET: {
+        ok: hasSecret,
+        obfuscated: ds
+          ? ds.slice(0, 2) + "•".repeat(Math.max(4, ds.length - 4)) + ds.slice(-2)
+          : undefined,
+      },
+    },
+    actionsUrl: `https://github.com/${OWNER}/${REPO}/actions`,
+  });
+});
+
+// ── autoSetupWorkflow (internal helper) ──────────────────────
+
+async function autoSetupWorkflow(pat: string): Promise<{ ok: boolean; action?: string; error?: string }> {
+  const fp   = `.github/workflows/${WF}`;
+  const yaml = Buffer.from(WORKFLOW_YAML, "utf8").toString("base64");
+  const hdrs = ghHeaders(pat);
+  try {
+    const chk  = await fetch(`${GH_API}/repos/${OWNER}/${REPO}/contents/${fp}?ref=${BRANCH}`, { headers: hdrs });
+    const sha  = chk.ok ? ((await chk.json()) as any)?.sha : undefined;
+    const body: Record<string, string> = {
+      message: "[S1AF] auto-setup: add self-trigger workflow — Jonathan Sherman",
+      content: yaml, branch: BRANCH,
+    };
+    if (sha) body.sha = sha;
+    const put = await fetch(`${GH_API}/repos/${OWNER}/${REPO}/contents/${fp}`, {
+      method: "PUT", headers: hdrs, body: JSON.stringify(body),
+    });
+    if (put.status === 200 || put.status === 201) return { ok: true, action: sha ? "updated" : "created" };
+    const err = await put.text();
+    return { ok: false, error: `PUT ${put.status}: ${err.slice(0, 120)}` };
+  } catch (e: any) {
+    return { ok: false, error: e.message };
+  }
+}
 
 // ── GET /api/deploy/health ───────────────────────────────────
 
