@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd-deploy.plist
+  Author: Jonathan Sherman
+  Copyright: (c) 2026 Jonathan Sherman. All Rights Reserved.
+  Framework: S1AF v1.0.0-JS
+  Sovereign ID: 1
+
+  INSTALL (one-time, no login required after):
+    cp Scripts/launchd-deploy.plist ~/Library/LaunchAgents/com.s1af.deploy.plist
+    launchctl load ~/Library/LaunchAgents/com.s1af.deploy.plist
+
+  UNINSTALL:
+    launchctl unload ~/Library/LaunchAgents/com.s1af.deploy.plist
+    rm ~/Library/LaunchAgents/com.s1af.deploy.plist
+
+  Runs replit-deploy.sh every 30 minutes automatically.
+  Token is resolved by the script (gh CLI / Keychain / token file).
+  No human interaction required after install.
+-->
+<plist version="1.0">
+<dict>
+
+  <!-- Unique job label -->
+  <key>Label</key>
+  <string>com.s1af.deploy</string>
+
+  <!-- Command to run -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-l</string>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <!-- Pulls latest version of itself before running — always up to date -->
+    <string>cd "${HOME}/oracle-ai" 2>/dev/null || git clone "https://github.com/jonathanEIDfounder/oracle-ai.git" "${HOME}/oracle-ai"; git -C "${HOME}/oracle-ai" pull --ff-only --quiet 2>/dev/null; bash "${HOME}/oracle-ai/Scripts/replit-deploy.sh"</string>
+  </array>
+
+  <!-- Run every 30 minutes -->
+  <key>StartInterval</key>
+  <integer>1800</integer>
+
+  <!-- Also run once immediately on load -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Log output -->
+  <key>StandardOutPath</key>
+  <string>/tmp/s1af-deploy.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/s1af-deploy-error.log</string>
+
+  <!-- Restart on failure -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <!-- Env vars available to the script -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/jonathan</string>
+    <key>S1AF_SOURCE</key>
+    <string>m2m-launchd</string>
+  </dict>
+
+</dict>
+</plist>
