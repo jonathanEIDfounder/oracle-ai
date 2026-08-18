@@ -300,6 +300,53 @@ router.get("/sentient/boot-status", (_req, res) => {
   });
 });
 
+// ── POST /api/sentient/seal-env ───────────────────────────────────────────────
+// Reads live process.env secrets and encrypts them into the cipherstore.
+// Must be called AFTER a server restart (so process.env has fresh Replit secrets).
+// Safe: never logs or returns the plaintext values.
+router.post("/sentient/seal-env", async (_req, res) => {
+  const { execFile } = await import("child_process");
+  const { promisify } = await import("util");
+  const execAsync = promisify(execFile);
+
+  const script = "/home/runner/workspace/scripts/_encrypt-secrets.sh";
+
+  try {
+    // Pass the server's live process.env so the script sees fresh secrets
+    const { stdout } = await execAsync("bash", [script], {
+      timeout: 30_000,
+      env: { ...process.env },   // fresh secrets inherited from workflow restart
+    });
+
+    // Parse key=value lines — never return raw values
+    const lines  = stdout.trim().split("\n");
+    const kv: Record<string, string> = {};
+    for (const line of lines) {
+      const eq = line.indexOf("=");
+      if (eq > 0) kv[line.slice(0, eq)] = line.slice(eq + 1);
+    }
+
+    const result = {
+      ok:           true,
+      moonshot:     kv["MS_ENC"]  ?? "skip",
+      deploySec:    kv["DS_ENC"]  ?? "skip",
+      github:       kv["GH_ENC"]  ?? "skip",
+      githubUser:   kv["GH_USER"] ?? null,
+      msLen:        Number(kv["MS_LEN"] ?? 0),
+      dsLen:        Number(kv["DS_LEN"] ?? 0),
+      ghLen:        Number(kv["GH_LEN"] ?? 0),
+      msPfx:        kv["MS_PFX"]  ?? null,
+      sovereign:    "OCSO-S1AF-GOV-1",
+    };
+
+    logger.info({ ...result }, "sentient/seal-env: secrets sealed");
+    res.json(result);
+  } catch (err) {
+    logger.error({ err }, "sentient/seal-env: failed");
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 // ── POST /api/sentient/git-push ───────────────────────────────────────────────
 // Pushes pending files to oracle-ai/main via the Replit GitHub integration.
 // No PAT required — uses the connector's OAuth token (repo scope confirmed).
