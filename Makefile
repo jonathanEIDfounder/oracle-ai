@@ -52,5 +52,17 @@ tokens:
 stamp:
 	@node scripts/embed-authorship.mjs
 
+## Full deploy pipeline: proceed → tag → release → push
+deploy:
+	@bash scripts/deploy.sh
+
+## Dry-run deploy (no push, no tag)
+deploy-dry:
+	@bash scripts/deploy.sh --dry-run
+
+## Deploy without re-running the build pipeline
+deploy-fast:
+	@bash scripts/deploy.sh --no-build
+
 # ── Default ───────────────────────────────────────────────────────────────────
 .DEFAULT_GOAL := kimi-xcode
