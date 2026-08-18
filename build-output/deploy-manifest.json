@@ -1,0 +1,12 @@
+{
+  "version": "v2026.08.18-s1af",
+  "commit": "9df57cc",
+  "deployedAt": "2026-08-18T22:50:24.206635Z",
+  "sovereign": "OCSO-S1AF-GOV-1",
+  "xcode_zip": "Oracle-AI-Kimi-Xcode.zip",
+  "zip_sha256": "8d4c906369c6d08e",
+  "platforms": [
+    "iOS",
+    "Linux"
+  ]
+}
