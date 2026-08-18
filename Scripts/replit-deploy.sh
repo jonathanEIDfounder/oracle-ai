@@ -35,6 +35,7 @@ API="https://api.github.com/repos/${OWNER}/${REPO}"
 SOURCE_LABEL="${S1AF_SOURCE:-replit-deploy}"
 CLONE_DIR="${S1AF_DIR:-${HOME}/oracle-ai}"
 TOKEN_FILE="${HOME}/.config/s1af/token"
+DEPLOY_SECRET_FILE="${HOME}/.config/s1af/deploy-secret"
 
 # ── helpers ───────────────────────────────────────────────────
 jparse() { python3 -c "import sys,json; d=json.load(sys.stdin); print(d${1})" 2>/dev/null || echo ""; }
@@ -55,6 +56,14 @@ gh_get()  { curl -sf  -H "Authorization: token $PAT" -H "Accept: application/vnd
 gh_post() { curl -sf -X POST  -H "Authorization: token $PAT" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "$@"; }
 gh_put()  { curl -sf -X PUT   -H "Authorization: token $PAT" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "$@"; }
 gh_patch(){ curl -sf -X PATCH -H "Authorization: token $PAT" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" "$@"; }
+
+# Resolve DEPLOY_SECRET for Kimi API calls (optional — only used if S1AF_API is set)
+resolve_deploy_secret() {
+  DS=""
+  [ "${#DEPLOY_SECRET:-}" -gt 8 ] && DS="$DEPLOY_SECRET" && return
+  [ -f "$DEPLOY_SECRET_FILE" ] && DS=$(cat "$DEPLOY_SECRET_FILE" | tr -d '[:space:]') && [ "${#DS}" -gt 8 ] && return
+  DS=""
+}
 
 push_file() {
   local FILE_PATH="$1" LOCAL_PATH="$2"
