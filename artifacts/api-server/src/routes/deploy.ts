@@ -41,7 +41,7 @@ function requireDeployToken(req: Request, res: Response, next: Function) {
  * Headers: X-Deploy-Token: <DEPLOY_SECRET>
  * Body:    { source?: string }
  */
-router.post("/api/deploy/trigger", requireDeployToken, async (req: Request, res: Response) => {
+router.post("/deploy/trigger", requireDeployToken, async (req: Request, res: Response) => {
   const pat = process.env.GITHUB_PAT;
   if (!pat || pat.length < 20) {
     res.status(503).json({ error: "GITHUB_PAT not configured on server" });
@@ -85,7 +85,7 @@ router.post("/api/deploy/trigger", requireDeployToken, async (req: Request, res:
  * GET /api/deploy/status
  * Headers: X-Deploy-Token: <DEPLOY_SECRET>
  */
-router.get("/api/deploy/status", requireDeployToken, async (_req: Request, res: Response) => {
+router.get("/deploy/status", requireDeployToken, async (_req: Request, res: Response) => {
   const pat = process.env.GITHUB_PAT;
   if (!pat || pat.length < 20) {
     res.status(503).json({ error: "GITHUB_PAT not configured on server" });
