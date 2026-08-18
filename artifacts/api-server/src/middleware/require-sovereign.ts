@@ -24,7 +24,8 @@ const EXEMPT = [
   "/auth/github-device",   // device-flow bootstrap — no JWT yet
   "/sentient/boot",        // boot-all — server is sovereign-environment-only
   "/sentient/boot-status",
-  "/sentient/seal-env",    // credential sealing — runs before biometric enrollment
+  "/sentient/seal-env",       // credential sealing — runs before biometric enrollment
+  "/sentient/create-release", // deploy pipeline — authenticated via X-Deploy-Secret
 ];
 
 export function requireSovereign(req: Request, res: Response, next: NextFunction): void {
