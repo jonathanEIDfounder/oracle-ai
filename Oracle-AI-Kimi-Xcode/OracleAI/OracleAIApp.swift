@@ -36,7 +36,12 @@ struct OracleAIApp: App {
         let env = ProcessInfo.processInfo.environment
         let url = env["REPLIT_DEV_DOMAIN"].map { "https://\($0)" }
             ?? "https://oracle-ai.replit.app"
+        // Write to standard defaults (main app) AND App Group defaults
+        // (SentientTunnel runs in a separate process — it can only read
+        // from the shared App Group container, not standard UserDefaults)
         UserDefaults.standard.set(url, forKey: "s1af.server.baseURL")
+        UserDefaults(suiteName: "group.com.jonathansherman.s1af")?
+            .set(url, forKey: "s1af.server.baseURL")
         return url
     }()
 
