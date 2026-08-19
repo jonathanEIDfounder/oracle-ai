@@ -43,6 +43,7 @@ import { logger } from "./lib/logger";
 import { CONFIG } from "./lib/config";
 import { noFingerprint, securityHeaders, strictCors } from "./lib/security";
 import { applyCoreBodyParsing } from "./lib/body-parsing";
+import { requestLimits, sovereignRequestSeal } from "./middleware/harden";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./lib/authorship";
@@ -59,6 +60,12 @@ app.use(securityHeaders);
 
 // ③ Strict CORS — Replit preview domains + localhost dev only
 app.use(strictCors);
+
+// ③-b Harden — request size cap (512 KB body / 4 KB URL) + header injection guard
+//      Applied after CORS so pre-flight OPTIONS are not rejected, before logging
+//      so malformed requests never pollute the log stream.
+app.use(requestLimits);
+app.use(sovereignRequestSeal);
 
 // ④ Structured request logging (after CORS so pre-flights are not logged as errors)
 app.use(
