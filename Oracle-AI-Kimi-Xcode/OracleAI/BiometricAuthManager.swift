@@ -74,15 +74,32 @@ final class BiometricAuthManager {
             isAuthenticated = result
             if result {
                 // ── Account lock — seal jonathantsherman@gmail.com ─────────
-                // Writes the SHA-256 of the permitted email to Keychain so
-                // DeviceGuard.check() can verify on every subsequent launch.
-                // Also stores the plain email in UserDefaults so the JWT
-                // issuer can embed it as the `email` claim.
                 DeviceGuard.sealAccountEmail()
                 UserDefaults.standard.set(
                     DeviceGuard.permittedEmail,
                     forKey: "s1af.sovereign.account.email"
                 )
+
+                // ── S1AF sovereign stack bootstrap ─────────────────────────
+                // Runs once per authenticated session, in priority order.
+                Task {
+                    // 1. Metal GPU + ANE + Apple Intelligence inference stack
+                    //    Loads CelestialShader.metal (compiled → default.metallib)
+                    await CelestialCore.shared.warmUp()
+
+                    // 2. Sentient M2M network layer — WiFi + cellular + MEC
+                    _ = SentientNetworkLayer.shared   // triggers NWPathMonitor + registration
+
+                    // 3. CloudKit sovereign database
+                    await CloudKitSync.shared.bootstrap()
+
+                    // 4. Siri/Shortcuts — donate Sentient intents
+                    donateSovereignShortcuts()
+
+                    // 5. Schedule background tasks
+                    SentientAlwaysOn.scheduleRefresh()
+                    SentientAlwaysOn.scheduleProcessing()
+                }
             } else {
                 lastError = "Authentication was not confirmed."
             }
