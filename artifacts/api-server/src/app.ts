@@ -42,7 +42,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { CONFIG } from "./lib/config";
 import { noFingerprint, securityHeaders, strictCors } from "./lib/security";
-import { captureRawBody } from "./middleware/raw-body";
+import { applyCoreBodyParsing } from "./lib/body-parsing";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./lib/authorship";
@@ -75,23 +75,10 @@ app.use(
   }),
 );
 
-// ⑤ Raw-body capture — 256 KB size cap; MUST run before JSON.parse for HMAC
-app.use(captureRawBody);
-
-// ⑥ JSON parse from raw buffer (preserves rawBody for HMAC verification)
-//    Returns 400 on malformed JSON instead of silently continuing.
-app.use((req: Request, res: Response, next: NextFunction) => {
-    const raw = (req as unknown as Record<string, unknown>).rawBody as string ?? "";
-  if (raw && req.headers["content-type"]?.includes("application/json")) {
-    try {
-      req.body = JSON.parse(raw);
-    } catch {
-      res.status(400).json({ ok: false, error: "Malformed JSON body" });
-      return;
-    }
-  }
-  next();
-});
+// ⑤⑥ Raw-body capture then JSON parse — order enforced by shared factory.
+//     applyCoreBodyParsing is also imported by HMAC regression tests so any
+//     reordering here is immediately caught (whitespace-divergent body test fails).
+applyCoreBodyParsing(app);
 
 // ⑦ URL-encoded form bodies (for legacy tooling compatibility)
 app.use(express.urlencoded({ extended: true }));
