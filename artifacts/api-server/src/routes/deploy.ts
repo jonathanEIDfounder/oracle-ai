@@ -26,7 +26,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import crypto from "crypto";
 import { resolveGitHubToken, validateGitHubToken, validateTokenDirect, clearTokenCache, persistSentinelToken } from "../lib/github-connector";
-import { requireAuth, safeEqual } from "../lib/hmac-auth";
+import { requireAuth, safeEqual, _clearHmacStateForTesting } from "../lib/hmac-auth";
 import { logger } from "../lib/logger";
 import { CONFIG } from "../lib/config";
 import { validateBody, deployTriggerSchema } from "../lib/validate";
@@ -64,10 +64,11 @@ const refreshRateMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
 registerRateMap("deploy", rateMap);
 
-/** Clear all rate-limit buckets. Exported for test isolation only. */
+/** Clear all rate-limit buckets and HMAC state. Exported for test isolation only. */
 export function _resetRateLimitForTesting(): void {
   rateMap.clear();
   refreshRateMap.clear();
+  _clearHmacStateForTesting(); // also clears hmacRateBuckets + replayCache in hmac-auth
 }
 
 function deployIp(req: Request): string {
@@ -505,6 +506,7 @@ router.post("/refresh-token", requireAuth({ allowLegacy: true }), async (req: Re
     login: validation.login,
     scopes: validation.scopes,
     message: "GitHub PAT updated in memory and persisted to SENTIENT_TOKEN in oracle-ai. Survives server restarts.",
+    note: "To persist permanently across Replit Secrets rotations, update the GITHUB_PAT secret in Replit Secrets.",
   });
 });
 
