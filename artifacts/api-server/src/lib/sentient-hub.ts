@@ -30,6 +30,7 @@ import { Response }                                  from "express";
 import { CONFIG }                                    from "./config";
 import { logger }                                    from "./logger";
 import { kimiComplete }                              from "./kimi";
+import { MECRouter }                                 from "./sentient-mec";
 import type { Message }                              from "./kimi";
 
 // ── Sovereign directive ──────────────────────────────────────
@@ -145,18 +146,25 @@ export const SentientHub = {
     token:     string;
     prompt:    string;
     maxTokens?: number;
-  }): Promise<{ response: string; peerId: string; backend: string; latencyMs: number }> {
+  }): Promise<{ response: string; peerId: string; backend: string; latencyMs: number; route: object }> {
     const peer = verifyToken(opts.token);
     if (!peer) throw new Error("M2M token invalid or expired");
 
     peer.lastSeenAt = new Date();
-    const start = Date.now();
+
+    // Route through best available endpoint (MEC edge → cloud)
+    const route = MECRouter.routeEndpoint();
+    logger.debug({ peerId: peer.id, routeType: route.type, url: route.url },
+      "[SentientHub] M2M query routed");
+
+    const start    = Date.now();
     const response = await routeQuery(opts.prompt, peer.id, opts.maxTokens);
     return {
       response,
       peerId:    peer.id,
       backend:   "kimi-2.6",
       latencyMs: Date.now() - start,
+      route:     { type: route.type, latencyMs: route.latencyMs },
     };
   },
 
