@@ -54,5 +54,17 @@
         <string>$(AppIdentifierPrefix)com.jonathansherman.s1af.oracle-ai</string>
     </array>
 
+    <!-- Network Extension — controls SentientTunnel packet tunnel -->
+    <key>com.apple.developer.networking.networkextension</key>
+    <array>
+        <string>packet-tunnel-provider</string>
+        <string>app-proxy-provider</string>
+        <string>content-filter-provider</string>
+    </array>
+
+    <!-- VPN API — NEVPNManager to auto-start tunnel on boot -->
+    <key>com.apple.developer.networking.vpn-api</key>
+    <true/>
+
 </dict>
 </plist>
