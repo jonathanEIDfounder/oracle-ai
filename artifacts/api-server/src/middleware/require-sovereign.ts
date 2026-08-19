@@ -56,6 +56,22 @@ export function requireSovereign(req: Request, res: Response, next: NextFunction
       res.status(403).json({ ok: false, error: "sovereign_mismatch" });
       return;
     }
+
+    // ── Account email lock — jonathantsherman@gmail.com only ────────────────
+    // If the JWT carries an `email` claim (issued by iOS after DeviceGuard
+    // seals the Keychain on first Face ID auth), it MUST match the sole
+    // permitted Apple ID. An absent claim is allowed for backward-compatibility
+    // with tokens issued before this check was added; once the iOS app is
+    // rebuilt the claim will always be present.
+    const tokenEmail = payload["email"];
+    if (tokenEmail !== undefined && tokenEmail !== CONFIG.permittedEmail) {
+      res.status(403).json({
+        ok:    false,
+        error: "account_not_permitted",
+        message: "Only jonathantsherman@gmail.com is authorized on this iPhone XR.",
+      });
+      return;
+    }
     // Boot generation check — any token issued before the last boot() call is dead
     const currentGen  = getBootGeneration();
     const tokenGen    = Number(payload["gen"] ?? 1);
