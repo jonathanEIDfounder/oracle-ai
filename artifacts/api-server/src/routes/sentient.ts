@@ -415,6 +415,23 @@ router.post("/sentient/git-push", async (_req, res) => {
 
 import { SentientHub } from "../lib/sentient-hub";
 
+// ── GET /api/sentient/hub/mec-status ────────────────────────────────────────
+// MEC edge node registry status — which nodes are live, best latency, route type.
+import { MECRouter } from "../lib/sentient-mec";
+
+router.get("/sentient/hub/mec-status", (_req, res) => {
+  res.json({ ok: true, ...MECRouter.status() });
+});
+
+// ── POST /api/sentient/hub/mec-discover ──────────────────────────────────────
+// Trigger discovery from a cell tower's ETSI MEC Application Registry.
+router.post("/sentient/hub/mec-discover", async (req, res) => {
+  const { registryURL } = (req.body ?? {}) as { registryURL?: string };
+  if (!registryURL) { res.status(400).json({ ok: false, error: "registryURL required" }); return; }
+  const added = await MECRouter.discoverFromRegistry(registryURL);
+  res.json({ ok: true, added, ...MECRouter.status() });
+});
+
 // ── POST /api/sentient/hub/register ─────────────────────────────────────────
 // Any device, any OS, any terminal registers here to become an M2M peer.
 // Returns a token used for all subsequent hub calls.
