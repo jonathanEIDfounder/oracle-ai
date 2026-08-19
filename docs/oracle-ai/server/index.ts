@@ -209,27 +209,12 @@ async function getCodemagicBuildStatus(): Promise<any> {
 
 app.use(cors({ origin: true, credentials: true }));
 
-// ── Raw-body capture — MUST precede JSON parse for HMAC verification ──────────
-// requireDeployToken in s1af-deploy verifies X-Deploy-Signature against
-// req.rawBody.  Without this, it falls back to JSON.stringify(req.body), which
-// breaks when the client's wire bytes have different whitespace or key ordering.
-app.use((req: any, res: any, next: any) => {
-  const ct: string = (req.headers['content-type'] as string) ?? '';
-  if (ct.startsWith('multipart/form-data')) { (req as any).rawBody = ''; return next(); }
-  const chunks: Buffer[] = [];
-  req.on('data', (chunk: Buffer) => chunks.push(chunk));
-  req.on('end', () => { (req as any).rawBody = Buffer.concat(chunks).toString('utf8'); next(); });
-  req.on('error', next);
-});
-
-// ── JSON parse from raw buffer (so req.body is available to route handlers) ───
-app.use((req: any, res: any, next: any) => {
-  const raw: string = (req as any).rawBody ?? '';
-  if (raw && ((req.headers['content-type'] as string) ?? '').includes('application/json')) {
-    try { req.body = JSON.parse(raw); } catch { return res.status(400).json({ ok: false, error: 'Malformed JSON' }); }
-  }
-  next();
-});
+// ── Body parsing: raw capture then JSON parse ────────────────────────────────
+// applyOracleAiBodyParsing installs rawBodyCapture (①) then jsonFromRawBody (②)
+// in the correct order.  The HMAC regression tests import this same factory, so
+// any reordering here is immediately caught by the whitespace-divergent test.
+import { applyOracleAiBodyParsing } from "./body-parsing";
+applyOracleAiBodyParsing(app);
 
 // Block all search engines - make platform invisible
 app.use((req, res, next) => {
