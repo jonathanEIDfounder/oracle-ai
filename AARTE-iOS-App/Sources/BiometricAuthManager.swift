@@ -7,6 +7,12 @@
 // =============================================================
 // Face ID gate — blocks all app content until the sovereign
 // owner authenticates. No bypass. No guest mode. No skip.
+//
+// On every successful authentication:
+//   • DeviceGuard.sealAccountEmail() is called to lock
+//     jonathantsherman@gmail.com to the Keychain.
+//   • The permitted email is written to UserDefaults so
+//     the JWT issuer can embed it as the `email` claim.
 // =============================================================
 
 import LocalAuthentication
@@ -66,7 +72,20 @@ final class BiometricAuthManager {
                 localizedReason: reason
             )
             isAuthenticated = result
-            if !result { lastError = "Authentication was not confirmed." }
+            if result {
+                // ── Account lock — seal jonathantsherman@gmail.com ─────────
+                // Writes the SHA-256 of the permitted email to Keychain so
+                // DeviceGuard.check() can verify on every subsequent launch.
+                // Also stores the plain email in UserDefaults so the JWT
+                // issuer can embed it as the `email` claim.
+                DeviceGuard.sealAccountEmail()
+                UserDefaults.standard.set(
+                    DeviceGuard.permittedEmail,
+                    forKey: "s1af.sovereign.account.email"
+                )
+            } else {
+                lastError = "Authentication was not confirmed."
+            }
         } catch let err as LAError {
             lastError = err.sovereignDescription
         } catch {
@@ -173,7 +192,7 @@ struct SovereignLockView: View {
 
                 Spacer()
 
-                Text("Authorized access only\nJonathan Sherman — Sovereign ID 1")
+                Text("Authorized access only\nJonathan Sherman — Sovereign ID 1\njonathantsherman@gmail.com")
                     .font(.caption2.monospaced())
                     .foregroundStyle(.white.opacity(0.25))
                     .multilineTextAlignment(.center)
