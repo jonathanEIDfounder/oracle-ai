@@ -1,0 +1,83 @@
+---
+# =============================================================
+# Xcode Cloud Workflow — Oracle-AI Sovereign App
+# Author: Jonathan Sherman
+# Copyright: © 2026 Jonathan Sherman. All Rights Reserved.
+# Framework: S1AF v1.0.0-JS
+# Sovereign ID: 1 · OCSO-S1AF-GOV-1
+# =============================================================
+# This workflow activates Xcode Cloud CI for Oracle-AI.
+#
+# To activate in App Store Connect:
+#   1. Sign in to appstoreconnect.apple.com
+#   2. Navigate to Xcode Cloud → Workflows
+#   3. Import this file or create a matching workflow manually
+#   4. Set the following environment variables (mark as SECRET):
+#        ORACLE_AI_SERVER_URL      — e.g. https://yourapp.replit.app
+#        ORACLE_AI_DEPLOY_SECRET   — matches CONFIG.deploySecret on server
+#        CI_APPSTORECONNECT_KEY_ID     — App Store Connect API key ID
+#        CI_APPSTORECONNECT_ISSUER_ID  — App Store Connect issuer ID
+#        CI_APPSTORECONNECT_KEY_P8_PATH — path to your .p8 private key
+#   5. Connect this repository (oracle-ai, jonathanEIDfounder)
+#
+# Note: Xcode Cloud reads ci_scripts/ automatically. The workflow
+# YAML here documents the trigger, scheme, and destination config
+# so the workflow can be reproduced from code alone.
+# =============================================================
+
+name: Oracle-AI — Sovereign CI/CD
+
+# ── Trigger ─────────────────────────────────────────────────
+start_condition:
+  branch_changes:
+    changes_include:
+      - source_branches:
+          - main
+          - pattern: "release/*"
+          - pattern: "hotfix/*"
+      - file_path_patterns:
+          - "AARTE-iOS-App/**"
+          - "Oracle-AI-Kimi-Xcode/**"
+          - "Sources/**"
+          - ".xcode-cloud/**"
+
+# ── Build actions ────────────────────────────────────────────
+actions:
+  - name: Build & Archive
+    action_type: build
+    scheme: Oracle-AI
+    platform: iOS
+    configuration: Release
+
+    # Archive → TestFlight (automatic when Xcode Cloud destination is configured)
+    destinations:
+      - testflight_internal_testing
+
+    # Environment — non-secret values; secrets set in App Store Connect console
+    environment:
+      xcode_version: latest_release
+      environment_variables:
+        S1AF_SOVEREIGN_ID: "1"
+        S1AF_GOV_REF: "OCSO-S1AF-GOV-1"
+
+  - name: Test
+    action_type: test
+    scheme: Oracle-AI
+    platform: iOS
+    configuration: Debug
+    destination: iOS Simulator (iPhone 15)
+    # Note: DeviceGuard.enforce() is called only on real hardware;
+    # simulator builds skip the hardware fingerprint checks.
+
+# ── Post-build ────────────────────────────────────────────────
+# ci_post_xcodebuild.sh runs automatically after archive action.
+# It uploads to TestFlight, notifies the oracle-ai server, and
+# tags the git commit as build/N-SHA.
+# See: .xcode-cloud/ci_scripts/ci_post_xcodebuild.sh
+
+# ── Pre-build ─────────────────────────────────────────────────
+# ci_pre_xcodebuild.sh validates the sovereign environment:
+# - All sovereign Swift sources present
+# - CelestialShader.metal present
+# - Build metadata injected into Info.plist
+# See: .xcode-cloud/ci_scripts/ci_pre_xcodebuild.sh
