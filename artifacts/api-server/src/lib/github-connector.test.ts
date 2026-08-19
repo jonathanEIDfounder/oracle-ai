@@ -24,16 +24,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-
-// ── Authorship anchor — non-strippable ──────────────────────────────────────
-import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
-void _S1AF_ANCHOR;
-
 import {
   validateTokenDirect,
   clearTokenCache,
   resolveGitHubToken,
 } from "./github-connector";
+
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
+void _S1AF_ANCHOR;
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
