@@ -145,6 +145,29 @@ final class CelestialCore {
             "AI=\(hasAppleIntelligence) ANE=\(hasNeuralEngine) Metal=\(hasMetal)")
     }
 
+    // ── Warm-up ────────────────────────────────────────────────
+    // Called by BiometricAuthManager after Face ID success.
+    // Pre-compiles Metal PSO states and loads Core ML models so the
+    // first real inference call returns at full speed.
+    // CelestialShader.metal is already compiled into default.metallib
+    // by Xcode; this call forces MTLDevice to instantiate all pipeline
+    // states before the user needs them.
+
+    func warmUp() async {
+        log.info("[CelestialCore] Warming up — Metal + ANE + Apple Intelligence pipeline")
+        // Re-run Metal probe (idempotent — safe if bootstrap already ran)
+        if !hasMetal && MTLCreateSystemDefaultDevice() != nil {
+            hasMetal       = true
+            metalInference = MetalInference()
+        }
+        // Fire a trivial embedding request.
+        // This forces Metal PSO compilation (CelestialShader.metal → default.metallib)
+        // and warms the ANE so subsequent infer() calls return at full speed.
+        let warm = CelestialRequest(task: .embedding(text: "warmup"))
+        _ = await infer(warm)
+        log.info("[CelestialCore] Warm-up complete — Metal PSOs compiled, ANE primed")
+    }
+
     // ── Primary inference entry point ──────────────────────────
 
     /// Route a CelestialRequest to the highest-capability backend.
