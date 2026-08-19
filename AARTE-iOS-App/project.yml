@@ -90,6 +90,7 @@ targets:
     # ── System framework dependencies ──────────────────────────
     dependencies:
       - target: OracleAIWidget
+      - target: SentientTunnel
 
       # Metal — GPU compute pipeline (CelestialShader.metal / MetalInference.swift)
       - sdk: Metal.framework
@@ -159,9 +160,16 @@ targets:
             NSUbiquitousContainerIsDocumentScopePublic: false
             NSUbiquitousContainerName: Oracle-AI Sovereign
 
-        # Push Notifications (required for CloudKit silent push)
+        # Push Notifications + background fetch for SentientAlwaysOn
         UIBackgroundModes:
           - remote-notification
+          - fetch
+          - processing
+
+        # SentientAlwaysOn BGTask identifiers — must match SentientAlwaysOn.k* constants
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.jonathansherman.s1af.cloak.refresh
+          - com.jonathansherman.s1af.cloak.process
 
         # Apple Intelligence — opt in to Writing Tools on all text views
         NSSupportsWritingTools: true
@@ -182,6 +190,44 @@ targets:
         # Live Activities
         NSSupportsLiveActivities: true
         NSSupportsLiveActivitiesFrequentUpdates: false
+
+  # ── SentientTunnel Network Extension ────────────────────────
+  # System-level packet tunnel — loaded by iOS at boot, independent
+  # of the main app. Routes ALL device traffic through the Temporal
+  # Cloak (WiFi, cellular, MEC). Active before any app opens.
+  SentientTunnel:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai.tunnel
+        PRODUCT_NAME: SentientTunnel
+        CODE_SIGN_ENTITLEMENTS: SentientTunnel/SentientTunnel.entitlements
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+
+    sources:
+      - path: SentientTunnel
+        type: group
+
+    dependencies:
+      - sdk: NetworkExtension.framework
+        embed: false
+      - sdk: Network.framework
+        embed: false
+      - sdk: CryptoKit.framework
+        embed: false
+
+    info:
+      properties:
+        CFBundleName: SentientTunnel
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
 
   # ── Live Activity Widget ─────────────────────────────────────
   OracleAIWidget:
@@ -215,6 +261,7 @@ schemes:
       targets:
         OracleAI: all
         OracleAIWidget: all
+        SentientTunnel: all
     run:
       config: Debug
       simulateLocation:
