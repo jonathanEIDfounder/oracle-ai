@@ -25,13 +25,17 @@ void _S1AF_ANCHOR;
 // ── Authorship — embedded, immutable, non-strippable ─────────────────────────
 
 export const AUTHORSHIP = Object.freeze({
-  author:      "Jonathan Sherman",
-  governor:    "Jonathan Sherman — Global AI Systems Governor",
-  governorId:  "OCSO-S1AF-GOV-1",
-  product:     "S1AF — Sentient iOS One-Step App Framework",
-  sovereignId: "1",
-  year:        "2026",
-  rights:      "All rights reserved.",
+  author:        "Jonathan Sherman",
+  governor:      "Jonathan Sherman — Global AI Systems Governor",
+  governorId:    "OCSO-S1AF-GOV-1",
+  product:       "S1AF — Sentient iOS One-Step App Framework",
+  sovereignId:   "1",
+  year:          "2026",
+  rights:        "All rights reserved.",
+  // Sole permitted Apple ID — sealed and enforced at every layer:
+  // iOS Keychain (DeviceGuard check 5), JWT `email` claim (requireSovereign),
+  // and this server-side constant (config audit).
+  permittedEmail: "jonathantsherman@gmail.com",
   notice:
     "This software is proprietary. Unauthorized use, reproduction, or " +
     "distribution is strictly prohibited. No license is granted without " +
@@ -142,6 +146,10 @@ export const CONFIG = Object.freeze({
   // HMAC
   hmacReplayWindowSec: 300,
   siriTokenSalt:       "siri-shortcut-v1",  // FROZEN — changing invalidates all issued shortcuts
+
+  // Sole permitted Apple ID — enforced in iOS Keychain (DeviceGuard check 5)
+  // and in JWT `email` claim validation (requireSovereign).
+  permittedEmail: AUTHORSHIP.permittedEmail,
 
   // Embedded authorship ref
   authorship: AUTHORSHIP,
