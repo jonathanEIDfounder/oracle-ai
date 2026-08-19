@@ -31,10 +31,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import crypto from "node:crypto";
 import express from "express";
 import supertest from "supertest";
 import deployRouter, { _resetRateLimitForTesting } from "./deploy";
 import { clearTokenCache, resolveGitHubToken } from "../lib/github-connector";
+import { signRequest, hmacRateBuckets } from "../lib/hmac-auth";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
@@ -77,6 +79,7 @@ const INITIAL_PAT   = "ghp_expired_initial_000000000000000";
 
 beforeEach(() => {
   _resetRateLimitForTesting();  // clear accumulated rate-limit buckets between tests
+  hmacRateBuckets.clear();       // clear HMAC-auth rate buckets between tests
   clearTokenCache();
   process.env["GITHUB_PAT"] = INITIAL_PAT;
 });
@@ -215,6 +218,98 @@ describe("POST /refresh-token — failed retry after prior success", () => {
     // KEY: must revert to goodPat, not the original INITIAL_PAT
     expect(process.env["GITHUB_PAT"]).toBe(goodPat);
     expect(process.env["GITHUB_PAT"]).not.toBe(INITIAL_PAT);
+  });
+});
+
+// ── F. HMAC-signed /trigger authentication ─────────────────────────────────────
+//
+// These tests guard against regressions where middleware order changes (e.g.
+// someone re-introducing express.json() above the raw-body capture) cause
+// HMAC verification to silently fail and return 401 on every real deploy.
+//
+// The test app does NOT install a raw-body middleware, so the server falls back
+// to JSON.stringify(req.body), which is deterministic for the fixed body objects
+// used here.  The signed body string must match that fallback exactly.
+
+describe("POST /trigger — HMAC authentication (regression guard)", () => {
+  // Helper: sign and dispatch a trigger request, returning the supertest response.
+  async function signedTrigger(
+    secret: string,
+    bodyObj: Record<string, string> = { source: "replit-deploy" },
+    overrides: { timestamp?: string; signature?: string } = {},
+  ) {
+    // Re-stringify so the signed string matches JSON.stringify(req.body) on the server.
+    const bodyStr = JSON.stringify(bodyObj);
+    const hdrs    = signRequest(secret, "POST", "/trigger", bodyStr);
+
+    return supertest(buildApp())
+      .post("/trigger")
+      .set("x-deploy-timestamp", overrides.timestamp ?? hdrs["X-Deploy-Timestamp"])
+      .set("x-deploy-signature", overrides.signature ?? hdrs["X-Deploy-Signature"])
+      .type("json")
+      .send(bodyStr);
+  }
+
+  beforeEach(() => {
+    // Stub fetch: connector probe → 401 (falls through to env PAT),
+    // GitHub workflow dispatch → 204 (success).
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = String(url);
+      if (u.includes("connectors") || (u.includes("api.github.com") && u.includes("/user"))) {
+        return new Response(null, { status: 401 });
+      }
+      if (u.includes("actions/workflows") && u.includes("dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+      throw new Error("Unexpected fetch in HMAC test: " + u);
+    });
+  });
+
+  it("returns non-401 when request is correctly HMAC-signed", async () => {
+    const res = await signedTrigger(DEPLOY_SECRET);
+    // Auth succeeded — handler may return 200/400/503 depending on env, but never 401.
+    expect(res.status).not.toBe(401);
+  });
+
+  it("returns 401 when no auth headers are provided at all", async () => {
+    const res = await supertest(buildApp())
+      .post("/trigger")
+      .send({ source: "replit-deploy" });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when HMAC is signed with the wrong secret", async () => {
+    const res = await signedTrigger("wrong-secret-totally-different-1234");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when X-Deploy-Timestamp is older than 5 minutes", async () => {
+    // Build a stale timestamp (400 s in the past — outside the 300 s replay window).
+    const staleTs  = Math.floor(Date.now() / 1000) - 400;
+    const bodyStr  = JSON.stringify({ source: "replit-deploy" });
+    const bodyHash = crypto.createHash("sha256").update(bodyStr).digest("hex");
+    const canon    = `${staleTs}\nPOST\n/trigger\n${bodyHash}`;
+    const staleSig = crypto.createHmac("sha256", DEPLOY_SECRET).update(canon).digest("hex");
+
+    const res = await supertest(buildApp())
+      .post("/trigger")
+      .set("x-deploy-timestamp", String(staleTs))
+      .set("x-deploy-signature", staleSig)
+      .type("json")
+      .send(bodyStr);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when timestamp is valid but signature is a garbage hex string", async () => {
+    const ts  = String(Math.floor(Date.now() / 1000));
+    const res = await signedTrigger(DEPLOY_SECRET, { source: "replit-deploy" }, {
+      timestamp: ts,
+      signature: "0".repeat(64), // all-zero hex — never the correct HMAC
+    });
+
+    expect(res.status).toBe(401);
   });
 });
 
