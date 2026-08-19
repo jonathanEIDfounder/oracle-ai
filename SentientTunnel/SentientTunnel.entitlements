@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- SentientTunnel Network Extension Entitlements
+     Sovereign ID: 1 · OCSO-S1AF-GOV-1
+     Loaded by iOS at boot — independent of the main app. -->
+<plist version="1.0">
+<dict>
+    <!-- Packet Tunnel Provider — routes ALL device traffic -->
+    <key>com.apple.developer.networking.networkextension</key>
+    <array>
+        <string>packet-tunnel-provider</string>
+    </array>
+
+    <!-- App Group — shared keychain/defaults with main app -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.jonathansherman.s1af</string>
+    </array>
+
+    <!-- Keychain access group -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.jonathansherman.s1af.oracle-ai.tunnel</string>
+    </array>
+</dict>
+</plist>
