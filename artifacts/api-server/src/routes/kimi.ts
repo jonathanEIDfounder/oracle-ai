@@ -268,6 +268,65 @@ router.post("/kimi/generate", requireIphoneXR, async (req: Request, res: Respons
 
 // ── POST /api/kimi/chat ───────────────────────────────────────────────────────
 
+// ── GET /api/kimi/source-tree ────────────────────────────────────────────────
+// Returns every sovereign iOS source file (Swift + Metal) with full content.
+// Powers the Replit Apple IDE panel in kimi-xcode-planner.
+router.get("/kimi/source-tree", requireIphoneXR, async (_req: Request, res: Response) => {
+  const { readdir, readFile } = await import("fs/promises");
+  const { join, relative }    = await import("path");
+
+  const root   = join(process.cwd(), "..", "..");
+  const dirs   = [
+    join(root, "AARTE-iOS-App", "Sources"),
+    join(root, "AARTE-iOS-App", "Shaders"),
+    join(root, "SentientTunnel"),
+  ];
+
+  const files: Array<{ path: string; language: string; content: string }> = [];
+
+  for (const dir of dirs) {
+    try {
+      const entries = await readdir(dir);
+      for (const name of entries.sort()) {
+        if (!name.endsWith(".swift") && !name.endsWith(".metal") && !name.endsWith(".entitlements")) continue;
+        const full = join(dir, name);
+        const content = await readFile(full, "utf8");
+        const rel = relative(root, full);
+        const language = name.endsWith(".metal") ? "metal" : name.endsWith(".entitlements") ? "xml" : "swift";
+        files.push({ path: rel, language, content });
+      }
+    } catch { /* dir may not exist */ }
+  }
+
+  res.json({ ok: true, files, count: files.length });
+});
+
+// ── GET /api/kimi/download-project ───────────────────────────────────────────
+// Returns a zip of the entire sovereign iOS project (Sources + Shaders + config).
+router.get("/kimi/download-project", requireIphoneXR, async (_req: Request, res: Response) => {
+  const { execFile }      = await import("child_process");
+  const { promisify }     = await import("util");
+  const { join: pathJoin} = await import("path");
+  const execAsync         = promisify(execFile);
+  const outPath           = "/tmp/oracle-ai-sovereign-ios.zip";
+  const root              = pathJoin(process.cwd(), "..", "..");
+
+  try {
+    await execAsync("zip", [
+      "-r", outPath,
+      "AARTE-iOS-App/Sources",
+      "AARTE-iOS-App/Shaders",
+      "AARTE-iOS-App/OracleAI.entitlements",
+      "AARTE-iOS-App/project.yml",
+      "SentientTunnel",
+    ], { cwd: root, timeout: 15_000 });
+
+    res.download(outPath, "oracle-ai-sovereign-ios.zip");
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 router.post("/kimi/chat", requireIphoneXR, async (req: Request, res: Response) => {
   if (!assertNotLocked(res)) return;
   if (isRateLimited(chatRateMap, clientIp(req), CONFIG.rateLimit.kimiChatPerMin)) {
