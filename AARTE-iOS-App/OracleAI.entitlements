@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- =============================================================
+     OracleAI.entitlements
+     Author: Jonathan Sherman
+     Copyright: © 2026 Jonathan Sherman. All Rights Reserved.
+     Framework: S1AF v1.0.0-JS · Celestial Core
+     Sovereign ID: 1 · OCSO-S1AF-GOV-1
+     =============================================================
+     Apple ecosystem capabilities for the Oracle-AI sovereign app.
+     CloudKit, Push Notifications, Siri, Sign in with Apple.
+     ============================================================= -->
+<plist version="1.0">
+<dict>
+
+    <!-- CloudKit — private sovereign database -->
+    <key>com.apple.developer.icloud-services</key>
+    <array>
+        <string>CloudKit</string>
+    </array>
+    <key>com.apple.developer.icloud-container-identifiers</key>
+    <array>
+        <string>iCloud.com.jonathansherman.s1af.oracle-ai</string>
+    </array>
+    <key>com.apple.developer.icloud-container-environment</key>
+    <array>
+        <string>Development</string>
+        <string>Production</string>
+    </array>
+
+    <!-- Push Notifications (APNs) — sovereign silent push for CloudKit -->
+    <key>aps-environment</key>
+    <string>development</string>
+
+    <!-- Siri / App Intents — sovereign voice commands -->
+    <key>com.apple.developer.siri</key>
+    <true/>
+
+    <!-- Sign in with Apple — optional; gated by DeviceGuard account lock -->
+    <key>com.apple.developer.applesignin</key>
+    <array>
+        <string>Default Authentication</string>
+    </array>
+
+    <!-- App Groups — shared Keychain / UserDefaults with widget extension -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.jonathansherman.s1af</string>
+    </array>
+
+    <!-- Keychain access group — DeviceGuard account hash storage -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.jonathansherman.s1af.oracle-ai</string>
+    </array>
+
+</dict>
+</plist>
