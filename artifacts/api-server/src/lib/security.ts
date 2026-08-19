@@ -85,6 +85,9 @@ export function securityHeaders(_req: Request, res: Response, next: NextFunction
   if (isProd) {
     res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   }
+  // Sovereign governance stamp — every response is attributable
+  res.setHeader("X-Sovereign-ID",  "1");
+  res.setHeader("X-S1AF-Gov-Ref", "OCSO-S1AF-GOV-1");
   next();
 }
 
