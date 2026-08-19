@@ -1,0 +1,277 @@
+name: Oracle-AI
+# =============================================================
+# Oracle-AI — S1AF Sovereign Xcode Project
+# Author: Jonathan Sherman
+# Copyright: © 2026 Jonathan Sherman. All Rights Reserved.
+# Framework: S1AF v1.0.0-JS
+# Sovereign ID: 1 · OCSO-S1AF-GOV-1
+# =============================================================
+# Generate: bash AARTE-iOS-App/generate-xcode-project.sh
+
+options:
+  bundleIdPrefix: com.jonathansherman.s1af
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.4"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+  defaultConfig: Release
+
+settings:
+  SWIFT_VERSION: "6.0"
+  IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+  TARGETED_DEVICE_FAMILY: "1"           # iPhone only — never iPad
+  SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "NO"
+  SUPPORTS_MACCATALYST: "NO"
+  ENABLE_BITCODE: "NO"
+  DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+  ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: "YES"
+  SWIFT_STRICT_CONCURRENCY: complete
+  GCC_OPTIMIZATION_LEVEL: s
+  SWIFT_COMPILATION_MODE: wholemodule
+  # Metal — compile shaders for all GPU families present on A12+
+  MTL_ENABLE_DEBUG_INFO: INCLUDE_SOURCE
+  MTL_FAST_MATH: "YES"
+
+configs:
+  Debug:   debug
+  Release: release
+
+targets:
+
+  # ── Main App ────────────────────────────────────────────────
+  OracleAI:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai
+        PRODUCT_NAME: Oracle-AI
+        INFOPLIST_FILE: AARTE-iOS-App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AARTE-iOS-App/OracleAI.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""              # set your Team ID here or in Xcode
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        ENABLE_PREVIEWS: "YES"
+        # Metal optimisation — full for release, debug info for debug
+        MTL_ENABLE_DEBUG_INFO: INCLUDE_SOURCE
+        MTL_FAST_MATH: "YES"
+        # CloudKit container
+        ICLOUD_CONTAINER_IDENTIFIERS: iCloud.com.jonathansherman.s1af.oracle-ai
+
+    sources:
+      - path: Scripts/SiriDeploy/Sources
+        type: group
+      - path: AARTE-iOS-App/Sources
+        type: group
+      # Metal compute shaders — compiled by Xcode into default.metallib
+      - path: AARTE-iOS-App/Shaders
+        type: group
+      # AARTE Swift library — compiled directly into the app target.
+      - path: Sources/AARTE
+        type: group
+      # QuantumView SwiftUI tab
+      - path: AARTE-iOS-App/AARTE/Views
+        type: group
+
+    resources:
+      - path: artifacts/api-server/assets/QuantumAdaptive_AppIcon.png
+        optional: true
+      # BehavioralEncoder Core ML model bundle — compiled with `coremlc`.
+      # Run scripts/train-behavioral-encoder.py on macOS to produce it.
+      - path: AARTE-iOS-App/Resources/BehavioralEncoder.mlmodelc
+        optional: true
+
+    # ── System framework dependencies ──────────────────────────
+    dependencies:
+      - target: OracleAIWidget
+      - target: SentientTunnel
+
+      # Metal — GPU compute pipeline (CelestialShader.metal / MetalInference.swift)
+      - sdk: Metal.framework
+        embed: false
+      - sdk: MetalKit.framework
+        embed: false
+
+      # Core ML — Apple Neural Engine inference (CelestialCore.swift)
+      - sdk: CoreML.framework
+        embed: false
+
+      # Accelerate — BLAS/vDSP for CPU-side linear algebra
+      - sdk: Accelerate.framework
+        embed: false
+
+      # CloudKit — sovereign private database (CloudKitSync.swift)
+      - sdk: CloudKit.framework
+        embed: false
+
+      # App Intents — Siri / Shortcuts integration (SovereignAppIntents.swift)
+      - sdk: AppIntents.framework
+        embed: false
+
+      # Local Authentication — Face ID (BiometricAuthManager.swift)
+      - sdk: LocalAuthentication.framework
+        embed: false
+
+      # Security — Keychain (DeviceGuard.swift)
+      - sdk: Security.framework
+        embed: false
+
+      # CryptoKit — SHA-256 for account hash (DeviceGuard.swift)
+      - sdk: CryptoKit.framework
+        embed: false
+
+      # Natural Language — on-device NLP, used by AppleIntelligenceLayer fallback
+      - sdk: NaturalLanguage.framework
+        embed: false
+
+    # ── Capabilities ───────────────────────────────────────────
+    entitlements:
+      path: AARTE-iOS-App/OracleAI.entitlements
+
+    # ── Info.plist keys ────────────────────────────────────────
+    info:
+      path: AARTE-iOS-App/Info.plist
+      properties:
+        CFBundleName: Oracle-AI
+        CFBundleDisplayName: Oracle-AI
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+
+        # Face ID
+        NSFaceIDUsageDescription: >
+          Oracle-AI requires Face ID to verify you are Jonathan Sherman
+          (Sovereign ID 1 — OCSO-S1AF-GOV-1). Unauthorized access is denied.
+
+        # Siri / App Intents
+        NSSiriUsageDescription: >
+          Oracle-AI uses Siri to let Sovereign ID 1 trigger deployments,
+          query platform status, and run on-device Celestial Core inference
+          using voice commands.
+
+        # CloudKit / iCloud
+        NSUbiquitousContainers:
+          iCloud.com.jonathansherman.s1af.oracle-ai:
+            NSUbiquitousContainerIsDocumentScopePublic: false
+            NSUbiquitousContainerName: Oracle-AI Sovereign
+
+        # Push Notifications + background fetch for SentientAlwaysOn
+        UIBackgroundModes:
+          - remote-notification
+          - fetch
+          - processing
+
+        # SentientAlwaysOn BGTask identifiers — must match SentientAlwaysOn.k* constants
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.jonathansherman.s1af.cloak.refresh
+          - com.jonathansherman.s1af.cloak.process
+
+        # Apple Intelligence — opt in to Writing Tools on all text views
+        NSSupportsWritingTools: true
+
+        # Device / orientation locks
+        UILaunchScreen:
+          UIColorName: ""
+          UIImageName: ""
+        UIRequiredDeviceCapabilities:
+          - arm64
+          - face-id
+          - metal              # Metal GPU required — A12 Bionic minimum
+        UIDeviceFamily:
+          - 1
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+
+        # Live Activities
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: false
+
+  # ── SentientTunnel Network Extension ────────────────────────
+  # System-level packet tunnel — loaded by iOS at boot, independent
+  # of the main app. Routes ALL device traffic through the Temporal
+  # Cloak (WiFi, cellular, MEC). Active before any app opens.
+  SentientTunnel:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai.tunnel
+        PRODUCT_NAME: SentientTunnel
+        CODE_SIGN_ENTITLEMENTS: SentientTunnel/SentientTunnel.entitlements
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+
+    sources:
+      - path: SentientTunnel
+        type: group
+
+    dependencies:
+      - sdk: NetworkExtension.framework
+        embed: false
+      - sdk: Network.framework
+        embed: false
+      - sdk: CryptoKit.framework
+        embed: false
+
+    info:
+      properties:
+        CFBundleName: SentientTunnel
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+
+  # ── Live Activity Widget ─────────────────────────────────────
+  OracleAIWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jonathansherman.s1af.oracle-ai.widget
+        PRODUCT_NAME: OracleAIWidget
+        INFOPLIST_FILE: AARTE-iOS-App/Widget-Info.plist
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "6.0"
+
+    sources:
+      - path: Scripts/SiriDeploy/LiveActivity
+        type: group
+
+    info:
+      path: AARTE-iOS-App/Widget-Info.plist
+      properties:
+        CFBundleName: OracleAIWidget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+schemes:
+  Oracle-AI:
+    build:
+      targets:
+        OracleAI: all
+        OracleAIWidget: all
+        SentientTunnel: all
+    run:
+      config: Debug
+      simulateLocation:
+        allow: false
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+      # Xcode Cloud archive → TestFlight via ci_post_xcodebuild.sh
