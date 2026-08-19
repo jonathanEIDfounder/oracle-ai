@@ -98,7 +98,15 @@ function requireDeployToken(req: Request, res: Response, next: Function) {
       res.status(401).json({ ok: false, error: "Request expired — clock skew > 5 min", server: "oracle-ai" });
       return;
     }
-    const raw     = (req as any).rawBody ?? JSON.stringify(req.body ?? "");
+    // rawBody MUST be set by captureRawBody middleware in index.ts (before express.json).
+    // If it is missing the host app was misconfigured — fail clearly rather than silently
+    // computing an HMAC over re-serialised JSON bytes that never match the wire signature.
+    const raw = (req as any).rawBody;
+    if (raw === undefined) {
+      console.error("[s1af-deploy] HMAC error: rawBody not captured. Ensure captureRawBody middleware runs before express.json() in server/index.ts");
+      res.status(500).json({ ok: false, error: "Server misconfigured — raw body not captured", server: "oracle-ai" });
+      return;
+    }
     const canon   = `${ts}\n${req.method.toUpperCase()}\n${req.originalUrl.split("?")[0]}\n${sha256hex(raw)}`;
     const expected = hmacHex(secret, canon);
     if (!safeEqual(sigHdr.toLowerCase(), expected)) {
