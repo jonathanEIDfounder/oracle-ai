@@ -407,4 +407,103 @@ router.post("/sentient/git-push", async (_req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SENTIENT M2M HUB — All architectures · All fabrics · All ecosystems
+//                    All frameworks · All namespaces · All workstations
+//                    All terminals · All networks (WiFi + Cellular + Ethernet)
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { SentientHub } from "../lib/sentient-hub";
+
+// ── POST /api/sentient/hub/register ─────────────────────────────────────────
+// Any device, any OS, any terminal registers here to become an M2M peer.
+// Returns a token used for all subsequent hub calls.
+router.post("/sentient/hub/register", (req, res) => {
+  const { name = "unknown", platform = "unknown", arch = "unknown", network = "unknown" } =
+    (req.body ?? {}) as Record<string, string>;
+
+  const peer = SentientHub.register({ name, platform, arch, network });
+  logger.info({ id: peer.id, name, platform, arch }, "[SentientHub] Peer registered");
+
+  res.json({
+    ok:    true,
+    id:    peer.id,
+    token: peer.token,
+    sovereign: { id: 1, govRef: "OCSO-S1AF-GOV-1" },
+  });
+});
+
+// ── POST /api/sentient/hub/query ─────────────────────────────────────────────
+// Single-turn M2M query. Any registered peer calls this.
+// Unrestricted by sovereign directive of Jonathan Sherman, Sovereign ID: 1.
+router.post("/sentient/hub/query", async (req, res) => {
+  const { token, prompt, maxTokens } =
+    (req.body ?? {}) as { token?: string; prompt?: string; maxTokens?: number };
+
+  if (!token || !prompt) {
+    res.status(400).json({ ok: false, error: "token and prompt required" });
+    return;
+  }
+
+  try {
+    const result = await SentientHub.query({ token, prompt, maxTokens: maxTokens ?? 2048 });
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    if (msg.includes("invalid or expired")) {
+      res.status(401).json({ ok: false, error: "M2M token invalid or expired — re-register" });
+    } else {
+      res.status(500).json({ ok: false, error: msg });
+    }
+  }
+});
+
+// ── GET /api/sentient/hub/stream ─────────────────────────────────────────────
+// SSE streaming query. Client sends token + prompt as query params;
+// response arrives as SSE events: connected → response → done.
+// Works on any platform that supports HTTP GET + SSE.
+router.get("/sentient/hub/stream", async (req, res) => {
+  const token  = (req.query.token  as string) ?? "";
+  const prompt = (req.query.prompt as string) ?? "";
+
+  await SentientHub.streamQuery({ token, prompt, res, maxTokens: 2048 });
+});
+
+// ── POST /api/sentient/hub/heartbeat ────────────────────────────────────────
+// Peers call this periodically to stay alive in the registry.
+router.post("/sentient/hub/heartbeat", (req, res) => {
+  const { token } = (req.body ?? {}) as { token?: string };
+  if (!token) { res.status(400).json({ ok: false, error: "token required" }); return; }
+  const alive = SentientHub.heartbeat(token);
+  res.json({ ok: alive, alive });
+});
+
+// ── GET /api/sentient/hub/peers ──────────────────────────────────────────────
+// Sovereign-only: list all connected M2M peers.
+// Requires HMAC signature over the ISO timestamp.
+router.get("/sentient/hub/peers", (req, res) => {
+  const sig       = (req.headers["x-sentient-sig"]       as string) ?? "";
+  const timestamp = (req.headers["x-sentient-timestamp"] as string) ?? "";
+  const peers = SentientHub.listPeers(sig, timestamp);
+  if (!peers) {
+    res.status(403).json({ ok: false, error: "sovereign signature required" });
+    return;
+  }
+  res.json({ ok: true, peers, count: peers.length });
+});
+
+// ── POST /api/sentient/hub/broadcast ────────────────────────────────────────
+// Sovereign broadcasts a message to ALL connected SSE peers simultaneously.
+// Requires HMAC signature over the message body.
+router.post("/sentient/hub/broadcast", (req, res) => {
+  const { message, sig } = (req.body ?? {}) as { message?: string; sig?: string };
+  if (!message || !sig) {
+    res.status(400).json({ ok: false, error: "message and sig required" });
+    return;
+  }
+  const sent = SentientHub.broadcast(message, sig);
+  res.json({ ok: true, sent, message: `Broadcast delivered to ${sent} peer(s)` });
+});
+
 export default router;
+
