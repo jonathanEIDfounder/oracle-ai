@@ -32,11 +32,12 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import crypto from "node:crypto";
-import express from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import supertest from "supertest";
 import deployRouter, { _resetRateLimitForTesting } from "./deploy";
 import { clearTokenCache, resolveGitHubToken } from "../lib/github-connector";
 import { signRequest, hmacRateBuckets } from "../lib/hmac-auth";
+import { captureRawBody } from "../middleware/raw-body";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "../lib/authorship";
@@ -124,7 +125,7 @@ describe("POST /refresh-token — authenticated refresh", () => {
       .set("x-deploy-token", DEPLOY_SECRET)
       .send({ token: VALID_PAT });
 
-    expect(res.body.note).toMatch(/Replit Secrets/i);
+    expect(res.body.message).toMatch(/SENTIENT_TOKEN|Survives server restarts/i);
   });
 });
 
@@ -223,27 +224,63 @@ describe("POST /refresh-token — failed retry after prior success", () => {
 
 // ── F. HMAC-signed /trigger authentication ─────────────────────────────────────
 //
-// These tests guard against regressions where middleware order changes (e.g.
-// someone re-introducing express.json() above the raw-body capture) cause
-// HMAC verification to silently fail and return 401 on every real deploy.
+// Guards against regressions where middleware order changes (e.g. someone puts
+// express.json() above captureRawBody) silently break HMAC: the server would
+// compute sha256("") for the body hash while the client signed the real bytes,
+// yielding a permanent 401 on every deploy attempt.
 //
-// The test app does NOT install a raw-body middleware, so the server falls back
-// to JSON.stringify(req.body), which is deterministic for the fixed body objects
-// used here.  The signed body string must match that fallback exactly.
+// buildProdApp() mirrors the production middleware sequence from app.ts:
+//   ⑤ captureRawBody (buffers raw bytes into req.rawBody)
+//   ⑥ JSON parse from rawBody
+//   Router mounted at /api/deploy — so req.originalUrl is /api/deploy/trigger
+//
+// All signatures are computed against the same /api/deploy/trigger path.
 
-describe("POST /trigger — HMAC authentication (regression guard)", () => {
-  // Helper: sign and dispatch a trigger request, returning the supertest response.
+/**
+ * Production-like test app — matches app.ts middleware order exactly.
+ * If someone reorders ⑤ and ⑥, captureRawBody will see an already-consumed
+ * stream and set rawBody = "".  HMAC then computes sha256("") ≠ sha256(body),
+ * causing the positive test below to fail and catch the regression.
+ */
+function buildProdApp() {
+  const app = express();
+
+  // ⑤ Raw-body capture — MUST precede JSON parse (mirrors app.ts)
+  app.use(captureRawBody);
+
+  // ⑥ JSON parse from raw buffer (same logic as app.ts lines 83-94)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const raw = (req as unknown as Record<string, unknown>).rawBody as string ?? "";
+    if (raw && req.headers["content-type"]?.includes("application/json")) {
+      try {
+        req.body = JSON.parse(raw);
+      } catch {
+        res.status(400).json({ ok: false, error: "Malformed JSON body" });
+        return;
+      }
+    }
+    next();
+  });
+
+  // Mount at /api/deploy so req.originalUrl matches the production path
+  app.use("/api/deploy", deployRouter);
+  return app;
+}
+
+describe("POST /api/deploy/trigger — HMAC authentication (regression guard)", () => {
+  const TRIGGER_PATH = "/api/deploy/trigger";
+
+  /** Sign and POST to /api/deploy/trigger, optionally overriding headers. */
   async function signedTrigger(
     secret: string,
     bodyObj: Record<string, string> = { source: "replit-deploy" },
     overrides: { timestamp?: string; signature?: string } = {},
   ) {
-    // Re-stringify so the signed string matches JSON.stringify(req.body) on the server.
     const bodyStr = JSON.stringify(bodyObj);
-    const hdrs    = signRequest(secret, "POST", "/trigger", bodyStr);
+    const hdrs    = signRequest(secret, "POST", TRIGGER_PATH, bodyStr);
 
-    return supertest(buildApp())
-      .post("/trigger")
+    return supertest(buildProdApp())
+      .post(TRIGGER_PATH)
       .set("x-deploy-timestamp", overrides.timestamp ?? hdrs["X-Deploy-Timestamp"])
       .set("x-deploy-signature", overrides.signature ?? hdrs["X-Deploy-Signature"])
       .type("json")
@@ -251,8 +288,8 @@ describe("POST /trigger — HMAC authentication (regression guard)", () => {
   }
 
   beforeEach(() => {
-    // Stub fetch: connector probe → 401 (falls through to env PAT),
-    // GitHub workflow dispatch → 204 (success).
+    // connector probe → 401 (fall through to env PAT)
+    // GitHub workflow dispatch → 204 (signals successful dispatch)
     vi.stubGlobal("fetch", async (url: string) => {
       const u = String(url);
       if (u.includes("connectors") || (u.includes("api.github.com") && u.includes("/user"))) {
@@ -265,16 +302,18 @@ describe("POST /trigger — HMAC authentication (regression guard)", () => {
     });
   });
 
-  it("returns non-401 when request is correctly HMAC-signed", async () => {
+  it("returns 200 ok:true when request is correctly HMAC-signed against raw body bytes", async () => {
     const res = await signedTrigger(DEPLOY_SECRET);
-    // Auth succeeded — handler may return 200/400/503 depending on env, but never 401.
-    expect(res.status).not.toBe(401);
+    // Auth passed AND GitHub dispatch succeeded (mocked 204 → handler returns 200)
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 
   it("returns 401 when no auth headers are provided at all", async () => {
-    const res = await supertest(buildApp())
-      .post("/trigger")
-      .send({ source: "replit-deploy" });
+    const res = await supertest(buildProdApp())
+      .post(TRIGGER_PATH)
+      .type("json")
+      .send(JSON.stringify({ source: "replit-deploy" }));
 
     expect(res.status).toBe(401);
   });
@@ -285,15 +324,15 @@ describe("POST /trigger — HMAC authentication (regression guard)", () => {
   });
 
   it("returns 401 when X-Deploy-Timestamp is older than 5 minutes", async () => {
-    // Build a stale timestamp (400 s in the past — outside the 300 s replay window).
+    // Craft a timestamp 400 s in the past — outside the 300 s replay window.
     const staleTs  = Math.floor(Date.now() / 1000) - 400;
     const bodyStr  = JSON.stringify({ source: "replit-deploy" });
     const bodyHash = crypto.createHash("sha256").update(bodyStr).digest("hex");
-    const canon    = `${staleTs}\nPOST\n/trigger\n${bodyHash}`;
+    const canon    = `${staleTs}\nPOST\n${TRIGGER_PATH}\n${bodyHash}`;
     const staleSig = crypto.createHmac("sha256", DEPLOY_SECRET).update(canon).digest("hex");
 
-    const res = await supertest(buildApp())
-      .post("/trigger")
+    const res = await supertest(buildProdApp())
+      .post(TRIGGER_PATH)
       .set("x-deploy-timestamp", String(staleTs))
       .set("x-deploy-signature", staleSig)
       .type("json")
