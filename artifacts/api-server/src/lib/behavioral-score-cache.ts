@@ -14,6 +14,10 @@
 
 import { createHash } from "crypto";
 
+// ── Authorship anchor — non-strippable ──────────────────────────────────────
+import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./authorship";
+void _S1AF_ANCHOR;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type BehavioralDecision = "AUTHORIZED" | "REVIEW" | "UNAUTHORIZED";
