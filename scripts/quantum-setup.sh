@@ -17,6 +17,7 @@
 #   IBM_QUANTUM_TOKEN=mytoken bash scripts/quantum-setup.sh --save
 # =============================================================
 
+readonly _S1AF_AUTHOR="© 2026 Jonathan Sherman — OCSO-S1AF-GOV-1 — S1AF-DRM-LOCKED"
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
