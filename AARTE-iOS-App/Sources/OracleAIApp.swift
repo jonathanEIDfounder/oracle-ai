@@ -56,6 +56,11 @@ struct OracleAIApp: App {
 
         // ── Step 3: Initialise hub URL (side-effect writes UserDefaults)
         _ = OracleAIApp._hubURL
+
+        // ── Step 4: Sovereign container lock — containerize → encapsulate → lock
+        // Seals all S1AF singletons, verifies they are initialised,
+        // then marks the container LOCKED for the lifetime of this process.
+        SovereignContainerLock.engage()
     }
 
     var body: some Scene {
