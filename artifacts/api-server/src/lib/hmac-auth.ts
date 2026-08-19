@@ -50,8 +50,17 @@ const REPLAY_WINDOW_S = CONFIG.hmacReplayWindowSec; // 300
 const MAX_REQUESTS    = CONFIG.rateLimit.hmacPerMin; // 10
 const WINDOW_MS       = 60_000;
 
-// ── Rate limiter — exported for daemon registration ───────────────────────────
+// ── Rate limiter — exported for daemon registration and test isolation ────────
 export const hmacRateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+/**
+ * Clear all in-memory HMAC state (rate buckets + replay cache).
+ * EXPORTED FOR TEST ISOLATION ONLY — never call in production code.
+ */
+export function _clearHmacStateForTesting(): void {
+  hmacRateBuckets.clear();
+  replayCache.clear();
+}
 
 function checkRateLimit(ip: string): boolean {
   const now   = Date.now();
@@ -140,7 +149,14 @@ export function requireAuth(options?: { allowLegacy?: boolean }) {
         return;
       }
 
-      const rawBody = ((req as unknown as Record<string, unknown>).rawBody as string) ?? JSON.stringify(req.body ?? "");
+      // rawBody MUST be set by captureRawBody middleware (app.ts) before express.json().
+      // If it is missing the server is misconfigured — fail clearly rather than silently
+      // computing an HMAC over re-serialised JSON bytes that never match the wire signature.
+      const rawBody = (req as unknown as Record<string, unknown>).rawBody as string | undefined;
+      if (rawBody === undefined) {
+        res.status(500).json({ ok: false, error: "Server misconfigured — raw body not captured. Ensure captureRawBody runs before express.json()." });
+        return;
+      }
       const canon   = canonical(ts, req.method, req.originalUrl.split("?")[0], rawBody);
       const expected = hmacHex(secret, canon);
       const sig      = sigHeader.toLowerCase();
