@@ -36,6 +36,7 @@ import { hmacRateBuckets } from "./lib/hmac-auth";
 import { loadSnapshot } from "./lib/snapshot";
 import { ensureBaseline } from "./lib/baseline";
 import { loadCipherstore } from "./lib/cipherstore";
+import { SovereignLock } from "./lib/sovereign-lock";
 
 // ── Authorship anchor — non-strippable ──────────────────────────────────────
 import { S1AF_ANCHOR as _S1AF_ANCHOR } from "./lib/authorship";
@@ -62,6 +63,12 @@ server.on("error", (err: NodeJS.ErrnoException) => {
   logger.error({ err }, "Fatal server error");
   process.exit(1);
 });
+
+// ③-b Sovereign container lock — containerize → encapsulate → lock
+//      Called after server.listen() so all routes and middleware are
+//      registered. After this point CONFIG is deep-frozen and the
+//      sovereign container is sealed for the lifetime of this process.
+SovereignLock.engage();
 
 // ④ Support daemons
 startDaemons();
