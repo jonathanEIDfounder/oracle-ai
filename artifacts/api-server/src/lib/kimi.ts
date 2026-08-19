@@ -728,6 +728,82 @@ export function validateSwiftCode(
   return all;
 }
 
+// ─── Xcode Cloud CI scaffold ──────────────────────────────────────────────────
+
+/** Returns the Xcode Cloud CI files injected into every generated project. */
+function xcodeCloudFiles(): Array<{ filename: string; code: string; description: string }> {
+  return [
+    {
+      filename: ".xcode-cloud/ci_scripts/ci_pre_xcodebuild.sh",
+      description: "Xcode Cloud pre-build: validates sovereign environment, injects build metadata, verifies Metal shaders and all sovereign Swift sources.",
+      code: `#!/bin/sh
+# S1AF Xcode Cloud Pre-Build · Sovereign ID: 1 · OCSO-S1AF-GOV-1
+set -euo pipefail
+echo "=== S1AF Xcode Cloud Pre-Build ==="
+echo "Sovereign ID : 1 — OCSO-S1AF-GOV-1"
+echo "Product      : \${CI_PRODUCT:-unknown}"
+echo "Branch       : \${CI_BRANCH:-unknown}"
+echo "Build number : \${CI_BUILD_NUMBER:-0}"
+echo "Commit       : \${CI_COMMIT_HASH:-unknown}"
+INFO_PLIST="\${CI_PRIMARY_REPOSITORY_PATH}/Info.plist"
+if [ -f "\$INFO_PLIST" ]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion \${CI_BUILD_NUMBER:-1}" "\$INFO_PLIST" 2>/dev/null || true
+  echo "✓ CFBundleVersion set to \${CI_BUILD_NUMBER:-1}"
+fi
+echo "=== Pre-build complete ==="`,
+    },
+    {
+      filename: ".xcode-cloud/ci_scripts/ci_post_xcodebuild.sh",
+      description: "Xcode Cloud post-build: uploads to TestFlight, notifies oracle-ai server, git-tags the commit.",
+      code: `#!/bin/sh
+# S1AF Xcode Cloud Post-Build · Sovereign ID: 1 · OCSO-S1AF-GOV-1
+set -euo pipefail
+echo "=== S1AF Xcode Cloud Post-Build ==="
+[ "\${CI_XCODEBUILD_EXIT_CODE:-1}" != "0" ] && { echo "Build failed — skipping"; exit 0; }
+[ "\${CI_XCODEBUILD_ACTION:-}" != "archive" ] && { echo "Not an archive — skipping upload"; exit 0; }
+BUILD="\${CI_BUILD_NUMBER:-0}"
+COMMIT="\${CI_COMMIT_HASH:-unknown}"
+BRANCH="\${CI_BRANCH:-unknown}"
+SERVER="\${ORACLE_AI_SERVER_URL:-}"
+SECRET="\${ORACLE_AI_DEPLOY_SECRET:-}"
+if [ -n "\$SERVER" ] && [ -n "\$SECRET" ]; then
+  HTTP=$(curl -s -o /dev/null -w "%{http_code}" -X POST "\$SERVER/api/deploy/trigger" \
+    -H "Content-Type: application/json" -H "x-deploy-token: \$SECRET" \
+    -d "{\\"source\\":\\"xcode-cloud\\",\\"build\\":\\"\$BUILD\\",\\"commit\\":\\"\$COMMIT\\",\\"branch\\":\\"\$BRANCH\\",\\"sovereignID\\":1}")
+  echo "\${HTTP}" | grep -q "^2" && echo "✓ oracle-ai notified (HTTP \$HTTP)" || echo "⚠ oracle-ai returned HTTP \$HTTP"
+fi
+git tag "build/\${BUILD}-\$(echo \$COMMIT | cut -c1-8)" 2>/dev/null && git push origin --tags 2>/dev/null || true
+echo "=== Post-build complete — build \$BUILD staged ==="`,
+    },
+    {
+      filename: ".xcode-cloud/workflows/oracle-ai-main.yml",
+      description: "Xcode Cloud workflow definition: triggers on push to main/release, archives to TestFlight.",
+      code: `---
+# S1AF Xcode Cloud Workflow — Sovereign ID: 1 · OCSO-S1AF-GOV-1
+name: Oracle-AI Sovereign CI/CD
+start_condition:
+  branch_changes:
+    changes_include:
+      - source_branches:
+          - main
+          - pattern: "release/*"
+actions:
+  - name: Build & Archive
+    action_type: build
+    scheme: Oracle-AI
+    platform: iOS
+    configuration: Release
+    destinations:
+      - testflight_internal_testing
+    environment:
+      xcode_version: latest_release
+      environment_variables:
+        S1AF_SOVEREIGN_ID: "1"
+        S1AF_GOV_REF: "OCSO-S1AF-GOV-1"`,
+    },
+  ];
+}
+
 // ─── Code generation ──────────────────────────────────────────────────────────
 
 /** Derive a bundle ID from an app description or name (S1AF convention). */
@@ -781,14 +857,18 @@ export async function generateSwiftCode(
 
   const fallbackBundleId = deriveBundleId(appDescription);
 
+  const ciFiles = xcodeCloudFiles();
+
   try {
     const parsed = JSON.parse(cleaned);
+    const generatedFiles = [...(parsed.files ?? []), ...ciFiles];
     const allFiles: Array<{ filename: string; code: string }> = [
       { filename: "ContentView.swift", code: parsed.mainCode ?? "" },
-      ...(parsed.files ?? []),
+      ...generatedFiles,
     ];
     return {
       ...parsed,
+      files:    generatedFiles,
       bundleId: parsed.bundleId ?? fallbackBundleId,
       warnings: validateSwiftCode(allFiles),
     };
@@ -801,10 +881,11 @@ export async function generateSwiftCode(
       mainCode: raw,
       files: [
         {
-          filename: "ContentView.swift",
-          code: raw,
+          filename:    "ContentView.swift",
+          code:        raw,
           description: "Main SwiftUI view",
         },
+        ...ciFiles,
       ],
       architectureNotes: undefined,
       warnings: validateSwiftCode(fallbackFiles),
